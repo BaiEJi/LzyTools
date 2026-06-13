@@ -11,14 +11,18 @@ class TestAppError:
     """AppError 异常测试。"""
 
     def test_app_error_attributes(self):
-        """AppError 正确存储 status_code 和 detail。"""
-        err = AppError(404, "Not found")
+        """AppError 正确存储 code、message 和 http_status。"""
+        err = AppError(code="NOT_FOUND", message="Not found", http_status=404)
+        assert err.http_status == 404
+        assert err.message == "Not found"
+        assert err.code == "NOT_FOUND"
+        # 向后兼容别名
         assert err.status_code == 404
         assert err.detail == "Not found"
 
     def test_app_error_is_exception(self):
         """AppError 是 Exception 子类。"""
-        err = AppError(400, "Bad request")
+        err = AppError(code="BAD_REQUEST", message="Bad request", http_status=400)
         assert isinstance(err, Exception)
         assert str(err) == "Bad request"
 
@@ -61,18 +65,20 @@ class TestSetupErrorHandlers:
     """全局异常处理器测试。"""
 
     def test_app_error_handler(self):
-        """AppError 返回对应状态码和 detail。"""
+        """AppError 返回对应状态码和标准化 JSON。"""
         app = FastAPI()
         setup_error_handlers(app)
 
         @app.get("/error")
         async def error_endpoint():
-            raise AppError(422, "Invalid input")
+            raise AppError(code="INVALID_INPUT", message="Invalid input", http_status=422)
 
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/error")
         assert resp.status_code == 422
-        assert resp.json()["detail"] == "Invalid input"
+        data = resp.json()
+        assert data["code"] == "INVALID_INPUT"
+        assert data["message"] == "Invalid input"
 
     def test_validation_error_handler(self):
         """请求验证失败返回 422。"""
@@ -108,7 +114,8 @@ class TestSetupErrorHandlers:
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/crash")
         assert resp.status_code == 500
-        assert resp.json()["detail"] == "Internal server error"
+        data = resp.json()
+        assert data["code"] == "INTERNAL_ERROR"
 
     def test_normal_request_unaffected(self):
         """正常请求不受异常处理器影响。"""

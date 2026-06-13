@@ -14,6 +14,7 @@ Cache 通过 Mixin 模式组织，Mixin 文件位于同目录下：
 - _pubsub: Pub/Sub 消息
 - _json: JSON 序列化快捷方式
 - _raw: 原始命令 / Pipeline
+- _stream: Stream 操作
 
 使用方式:
     cache = Cache(RedisConfig(url="redis://localhost:6379/0"))
@@ -35,6 +36,7 @@ from basic_tool.redis.client._raw import RawMixin
 from basic_tool.redis.client._script import ScriptMixin
 from basic_tool.redis.client._set import SetMixin
 from basic_tool.redis.client._sorted_set import SortedSetMixin
+from basic_tool.redis.client._stream import StreamMixin
 from basic_tool.redis.client._string import StringMixin
 from basic_tool.redis.config import RedisConfig
 
@@ -49,6 +51,7 @@ class Cache(
     PubSubMixin,
     JsonMixin,
     RawMixin,
+    StreamMixin,
 ):
     """
     Redis 异步客户端，生命周期由业务方管理。

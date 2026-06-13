@@ -12,10 +12,11 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+from basic_tool.errors import setup_error_handlers
 from basic_tool.fastapi.auth import ApiKeyAuth, JWTAuth
 from basic_tool.fastapi.config import FastApiConfig
 from basic_tool.fastapi.health import create_health_router
-from basic_tool.fastapi.middleware import RequestLoggingMiddleware, setup_error_handlers
+from basic_tool.fastapi.middleware import RequestLoggingMiddleware
 from basic_tool.logger import setup as setup_logger
 
 

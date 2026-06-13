@@ -187,6 +187,12 @@ class Cache:
 | `async subscribe(*channels) -> PubSub` | 订阅频道，返回已订阅的 PubSub |
 | `async psubscribe(*patterns) -> PubSub` | 按模式订阅，支持 `*` `?` `[...]` 通配符 |
 
+#### Stream 操作
+
+| 方法 | 说明 |
+|---|---|
+| `async xadd(name, fields, *, id="*", maxlen=None, approximate=True) -> str` | 向 Stream 追加消息，返回 entry ID |
+
 ---
 
 ### `health.py` — CacheHealth

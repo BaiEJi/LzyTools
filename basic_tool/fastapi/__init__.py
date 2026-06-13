@@ -35,10 +35,11 @@
     # uvicorn main:app --host 0.0.0.0 --port 8000
 """
 
+from basic_tool.errors import AppError
 from basic_tool.fastapi.app import create_app
 from basic_tool.fastapi.auth import ApiKeyAuth, JWTAuth
 from basic_tool.fastapi.config import AuthConfig, CorsConfig, FastApiConfig
-from basic_tool.fastapi.middleware import AppError, RequestLoggingMiddleware
+from basic_tool.fastapi.middleware import RequestLoggingMiddleware, setup_error_handlers
 from basic_tool.logger.config import LogConfig
 
 __all__ = [
