@@ -15,6 +15,7 @@ from basic_tool.email.dry_run import DryRunSender
 from basic_tool.email.exceptions import EmailError, SendError, TemplateError
 from basic_tool.email.models import Attachment, Email, InlineImage, SendResult
 from basic_tool.email.sender import EmailSender, SmtpSender
+from basic_tool.email.task import send_email_task, setup_email_worker
 
 __all__ = [
     # config
@@ -29,6 +30,9 @@ __all__ = [
     "SmtpSender",
     # dry_run
     "DryRunSender",
+    # task
+    "send_email_task",
+    "setup_email_worker",
     # exceptions
     "EmailError",
     "SendError",

@@ -95,6 +95,25 @@ class Storage:
 内置路径遍历防护：所有方法会校验解析后的路径必须位于 `base_dir` 内，
 拦截绝对路径和 `..` 上跳。非法 key 抛 `ValueError`。
 
+#### 日志
+
+`Storage` 门面和 `LocalBackend.init()` 通过 loguru 记录操作日志。当
+`basic_tool.context.log_extra.enable_log_injection()` 已激活时，每条日志会自动
+携带当前请求的 `trace_id`，便于跨模块/跨服务追踪。
+
+| 方法 | 级别 | 记录字段 |
+|---|---|---|
+| `Storage.put()` | INFO | `key`、`size`、`content_type` |
+| `Storage.get()` | DEBUG | `key` |
+| `Storage.delete()` | INFO | `key` |
+| `Storage.exists()` | DEBUG | `key`、`exists` |
+| `Storage.list()` | INFO | `prefix`、`count` |
+| `LocalBackend.init()` | INFO | `base_dir` |
+
+日志格式（logfmt）：`level||file:line||key=value||...||message`，例如::
+
+    INFO||storage.py:80||storage put | key=hello.txt size=11 content_type=None
+
 ---
 
 ## 使用示例

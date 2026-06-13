@@ -3,7 +3,9 @@
 使用 Pydantic 模型统一管理 httpx 客户端、重试、熔断器的所有配置参数。
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from basic_tool.metrics.collector import MetricsCollector
 
 
 class RetryConfig(BaseModel):
@@ -51,7 +53,15 @@ class HttpConfig(BaseModel):
         log_request_body: 是否记录请求体（可能含敏感数据）。
         log_response_body: 是否记录响应体。
         max_body_log_size: 日志中响应体最大字符数。
+        propagate_context: 是否自动将当前请求上下文的传播头
+            （X-Trace-Id 等）注入出站 HTTP 请求，不覆盖用户已设置的头。
+        metrics: 可选的 MetricsCollector，提供时记录出站请求的 counter
+            （http_client_requests_total）和 histogram
+            （http_client_request_duration_seconds）。None 表示不采集，
+            零开销。
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     base_url: str = ""
     timeout: float = 30.0
@@ -68,3 +78,5 @@ class HttpConfig(BaseModel):
     log_request_body: bool = False
     log_response_body: bool = False
     max_body_log_size: int = 500
+    propagate_context: bool = True
+    metrics: MetricsCollector | None = None

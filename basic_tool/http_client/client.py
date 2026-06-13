@@ -11,6 +11,7 @@ from typing import Any
 import httpx
 from loguru import logger
 
+from basic_tool.context.propagation import inject_headers_to_httpx
 from basic_tool.http_client.config import HttpConfig
 from basic_tool.http_client.transport import CircuitBreakerTransport, RetryTransport
 
@@ -144,47 +145,100 @@ class HttpClient:
             transport = CircuitBreakerTransport(transport, self._config.circuit_breaker)
 
         if self._config.retry is not None:
-            transport = RetryTransport(transport, self._config.retry)
+            transport = RetryTransport(
+                transport, self._config.retry, metrics=self._config.metrics
+            )
 
         return transport
 
     def _build_event_hooks(self) -> dict[str, list]:
-        """构建日志事件钩子。
+        """构建事件钩子（日志 + 上下文传播头注入 + 出站请求指标）。
+
+        当 ``log_requests`` 为 True 时记录请求/响应日志。
+        当 ``propagate_context`` 为 True 时，在请求发出前自动注入当前
+        请求上下文的传播头（X-Trace-Id 等），不覆盖用户已设置的头。
+        当 ``metrics`` 不为 None 时，``on_response`` 钩子额外记录
+        ``http_client_requests_total``（counter）和
+        ``http_client_request_duration_seconds``（histogram）；记录失败
+        不影响请求本身（try/except 兜底）。
 
         Returns:
-            httpx event_hooks 字典。
+            httpx event_hooks 字典。无活跃配置时返回空字典。
         """
-        if not self._config.log_requests:
+        need_request_hook = (
+            self._config.log_requests
+            or self._config.propagate_context
+            or self._config.metrics is not None
+        )
+        if not need_request_hook:
             return {}
 
+        need_start_time = self._config.log_requests or self._config.metrics is not None
+
         async def on_request(request: httpx.Request) -> None:
-            """请求开始钩子。"""
-            request.extensions["_start_time"] = time.monotonic()
-            logger.info(
-                "HTTP 请求开始 | method={} url={}",
-                request.method, request.url,
-            )
+            """请求开始钩子：注入上下文传播头并记录日志。"""
+            if self._config.propagate_context:
+                ctx_headers = inject_headers_to_httpx()
+                for name, value in ctx_headers.items():
+                    if name not in request.headers:
+                        request.headers[name] = value
 
-        async def on_response(response: httpx.Response) -> None:
-            """请求完成钩子。"""
-            request = response.request
-            start = request.extensions.get("_start_time")
-            elapsed_ms = (time.monotonic() - start) * 1000 if start else 0
+            if need_start_time:
+                request.extensions["_start_time"] = time.monotonic()
 
-            logger.info(
-                "HTTP 请求完成 | method={} url={} status={} elapsed={:.1f}ms",
-                request.method, request.url,
-                response.status_code, elapsed_ms,
-            )
-
-            if response.is_error:
-                body_preview = ""
-                if self._config.log_response_body:
-                    body_preview = response.text[:self._config.max_body_log_size]
-                logger.warning(
-                    "HTTP 请求异常 | method={} url={} status={} body={}",
+            if self._config.log_requests:
+                logger.info(
+                    "HTTP 请求开始 | method={} url={}",
                     request.method, request.url,
-                    response.status_code, body_preview,
                 )
 
-        return {"request": [on_request], "response": [on_response]}
+        hooks: dict[str, list] = {"request": [on_request]}
+
+        if self._config.log_requests or self._config.metrics is not None:
+            async def on_response(response: httpx.Response) -> None:
+                """请求完成钩子：记录日志和/或出站请求指标。"""
+                request = response.request
+                start = request.extensions.get("_start_time")
+                elapsed_ms = (time.monotonic() - start) * 1000 if start else 0
+
+                if self._config.log_requests:
+                    logger.info(
+                        "HTTP 请求完成 | method={} url={} status={} elapsed={:.1f}ms",
+                        request.method, request.url,
+                        response.status_code, elapsed_ms,
+                    )
+
+                    if response.is_error:
+                        body_preview = ""
+                        if self._config.log_response_body:
+                            body_preview = response.text[:self._config.max_body_log_size]
+                        logger.warning(
+                            "HTTP 请求异常 | method={} url={} status={} body={}",
+                            request.method, request.url,
+                            response.status_code, body_preview,
+                        )
+
+                if self._config.metrics is not None:
+                    try:
+                        self._config.metrics.counter(
+                            "http_client_requests_total",
+                            labels={
+                                "method": request.method,
+                                "url": str(request.url),
+                                "status": str(response.status_code),
+                            },
+                        )
+                        self._config.metrics.histogram(
+                            "http_client_request_duration_seconds",
+                            elapsed_ms / 1000,
+                            labels={
+                                "method": request.method,
+                                "url": str(request.url),
+                            },
+                        )
+                    except Exception:
+                        logger.debug("metrics 记录失败", exc_info=True)
+
+            hooks["response"] = [on_response]
+
+        return hooks

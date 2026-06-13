@@ -6,6 +6,7 @@
 from pydantic import BaseModel
 
 from basic_tool.logger.config import LogConfig
+from basic_tool.metrics.collector import MetricsCollector
 
 
 class CorsConfig(BaseModel):
@@ -57,11 +58,17 @@ class FastApiConfig(BaseModel):
         auth: 鉴权配置，None 表示不启用鉴权。
         log: 日志配置，传入则在 create_app 时自动调用 setup() 配置 loguru。
              None 表示不自动配置日志（使用 loguru 默认行为）。
+        metrics: 指标采集器，传入则在请求日志中间件中记录
+                 ``http_requests_total`` (counter) 和
+                 ``http_request_duration_seconds`` (histogram)。None 表示不采集（零开销）。
+                 采集器的生命周期（init/close）由调用方负责。
         health_prefix: 健康检查端点路径前缀。
         enable_request_logging: 是否启用请求日志中间件。
         enable_error_handlers: 是否启用全局异常处理器。
         enable_context_middleware: 是否启用请求上下文中间件（W3C Trace Context）。
     """
+
+    model_config = {"arbitrary_types_allowed": True}
 
     title: str = "API"
     version: str = "0.1.0"
@@ -69,6 +76,7 @@ class FastApiConfig(BaseModel):
     cors: CorsConfig = CorsConfig()
     auth: AuthConfig | None = None
     log: LogConfig | None = None
+    metrics: MetricsCollector | None = None
     health_prefix: str = "/health"
     enable_request_logging: bool = True
     enable_error_handlers: bool = True

@@ -16,6 +16,10 @@ class TaskGroup:
     Provides a managed context for creating and awaiting concurrent tasks.
     On exit, if any tasks failed, raises CompositeError instead of
     BaseExceptionGroup.
+
+    请求上下文传播: 底层 asyncio.TaskGroup.create_task() 自动复制当前 ContextVar
+    快照（Python 3.11+），``ctx.get("trace_id")`` 等值在组内各任务中可见。
+    上下文为快照拷贝，跨任务互不影响。
     """
 
     def __init__(self) -> None:

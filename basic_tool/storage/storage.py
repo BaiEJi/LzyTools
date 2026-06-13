@@ -4,6 +4,8 @@
 业务方通过 Storage 使用存储功能，不直接接触后端。
 """
 
+from loguru import logger
+
 from basic_tool.storage.backend import FileInfo, StorageBackend
 from basic_tool.storage.config import StorageConfig
 
@@ -71,16 +73,26 @@ class Storage:
     ) -> None:
         """写入文件，委托给后端。
 
+        写入完成后通过 loguru 记录操作日志（key、大小、content_type）。
+
         Args:
             key: 文件键名（相对路径）。
             data: 文件内容。
             content_type: MIME 类型。
             metadata: 自定义元数据。
         """
+        logger.info(
+            "storage put | key={} size={} content_type={}",
+            key,
+            len(data),
+            content_type,
+        )
         await self._backend.put(key, data, content_type, metadata)
 
     async def get(self, key: str) -> bytes:
         """读取文件，委托给后端。
+
+        读取前通过 loguru 记录 DEBUG 日志（key）。
 
         Args:
             key: 文件键名。
@@ -88,18 +100,24 @@ class Storage:
         Returns:
             完整文件内容 bytes。
         """
+        logger.debug("storage get | key={}", key)
         return await self._backend.get(key)
 
     async def delete(self, key: str) -> None:
         """删除文件，委托给后端。
 
+        删除前通过 loguru 记录操作日志（key）。
+
         Args:
             key: 文件键名。
         """
+        logger.info("storage delete | key={}", key)
         await self._backend.delete(key)
 
     async def exists(self, key: str) -> bool:
         """检查文件存在，委托给后端。
+
+        检查后通过 loguru 记录 DEBUG 日志（key、是否存在）。
 
         Args:
             key: 文件键名。
@@ -107,7 +125,9 @@ class Storage:
         Returns:
             文件存在返回 True，否则 False。
         """
-        return await self._backend.exists(key)
+        result = await self._backend.exists(key)
+        logger.debug("storage exists | key={} exists={}", key, result)
+        return result
 
     async def info(self, key: str) -> FileInfo:
         """获取文件信息，委托给后端。
@@ -123,13 +143,17 @@ class Storage:
     async def list(self, prefix: str = "") -> list[FileInfo]:
         """列出文件，委托给后端。
 
+        列举完成后通过 loguru 记录操作日志（prefix、匹配数量）。
+
         Args:
             prefix: 键名前缀，空字符串列出所有文件。
 
         Returns:
             FileInfo 列表。
         """
-        return await self._backend.list(prefix)
+        result = await self._backend.list(prefix)
+        logger.info("storage list | prefix={} count={}", prefix, len(result))
+        return result
 
     def url(self, key: str) -> str:
         """拼接访问 URL。

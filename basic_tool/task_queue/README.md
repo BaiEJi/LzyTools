@@ -117,6 +117,47 @@ settings = build_settings(config)
 # settings 可直接传给 arq.Worker(settings)
 ```
 
+## 错误处理与重试策略
+
+Worker 包装层（`_wrap_function`）区分**业务异常**和**系统异常**：
+
+- **业务异常 `AppError`**：视为预期失败（如参数非法、业务规则不满足），记录 WARNING 后返回错误标记字典 `{"_error": True, "code": ..., "message": ...}`，**不触发 ARQ 重试**。
+- **其他异常**（`ConnectionError`、`TimeoutError` 等）：视为系统故障，照常抛出由 ARQ 按 `max_tries` 重试。
+
+```python
+from basic_tool.errors import AppError
+
+@task(max_tries=3)
+async def process_order(ctx, order_id: str):
+    order = load_order(order_id)
+    if order is None:
+        raise AppError("ORDER_NOT_FOUND", f"订单不存在: {order_id}")  # 不重试
+    await send_to_upstream(order)  # 网络异常会被 ARQ 重试
+```
+
+## 请求上下文跨进程传播
+
+`enqueue()` 自动序列化当前请求上下文（`trace_id`、`user_id` 等），随任务传递到 Worker 进程。Worker 执行任务前通过 `_wrap_function` 恢复上下文，实现跨进程追踪。
+
+```python
+from basic_tool.context.ctx import request_context
+
+# 生产者端：在请求上下文中入队
+with request_context(trace_id="req-abc", user_id=42):
+    await queue.enqueue("send_email", "user@example.com")
+    # 任务携带 _context_snapshot={"trace_id": "req-abc", "user_id": 42}
+
+# Worker 端：自动恢复，任务函数内可直接访问
+@task()
+async def send_email(ctx, to: str):
+    from basic_tool.context.ctx import ctx as req_ctx
+    print(req_ctx.get("trace_id"))  # "req-abc"
+    print(req_ctx.get("user_id"))   # 42
+```
+
+无活跃上下文时（如脚本直接入队），传递空字典，Worker 跳过恢复，任务正常执行。
+
+
 ## 依赖
 
 - `arq>=0.26.0`

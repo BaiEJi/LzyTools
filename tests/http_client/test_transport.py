@@ -7,6 +7,8 @@ import pytest
 
 from basic_tool.http_client.config import CircuitBreakerConfig, RetryConfig
 from basic_tool.http_client.transport import CircuitBreakerTransport, RetryTransport
+from basic_tool.metrics.collector import MetricsCollector
+from basic_tool.metrics.config import MetricsConfig
 
 
 def _mock_handler(status_code: int = 200, body: str = "ok"):
@@ -220,3 +222,106 @@ class TestCircuitBreakerTransport:
                 await client.get("http://test/api")
 
         assert transport.state == "open"
+
+
+def _make_collector() -> MetricsCollector:
+    """构造一个未初始化（无网络）的 MetricsCollector 用于测试。"""
+    return MetricsCollector(MetricsConfig(service_name="test"), endpoint="http://vm:8428")
+
+
+class TestRetryTransportMetrics:
+    """RetryTransport 重试指标测试。"""
+
+    @pytest.mark.asyncio
+    async def test_metrics_recorded_on_status_retry(self):
+        """可重试状态码触发重试时记录 counter。"""
+        handler, _ = _mock_handler_sequence([503, 503, 200])
+        config = RetryConfig(
+            max_retries=3,
+            backoff_factor=0.01,
+            retryable_status_codes=frozenset({503}),
+        )
+        inner = httpx.MockTransport(handler)
+        collector = _make_collector()
+        transport = RetryTransport(inner, config, metrics=collector)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            response = await client.get("http://test/api")
+
+        assert response.status_code == 200
+        points = collector._buffers.get("http_client_retries_total", [])
+        assert len(points) == 2  # 两次 503 各记录一次
+        assert all("http://test/api" == p.labels["url"] for p in points)
+
+    @pytest.mark.asyncio
+    async def test_metrics_recorded_on_connect_error_retry(self):
+        """连接异常触发重试时记录 counter。"""
+        call_count = 0
+
+        async def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise httpx.ConnectError("refused", request=request)
+            return httpx.Response(200, text="ok")
+
+        config = RetryConfig(max_retries=3, backoff_factor=0.01)
+        inner = httpx.MockTransport(handler)
+        collector = _make_collector()
+        transport = RetryTransport(inner, config, metrics=collector)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            response = await client.get("http://test/api")
+
+        assert response.status_code == 200
+        points = collector._buffers.get("http_client_retries_total", [])
+        assert len(points) == 2  # 两次 ConnectError 各记录一次
+
+    @pytest.mark.asyncio
+    async def test_metrics_recorded_on_exhausted(self):
+        """重试耗尽时也记录 counter。"""
+        handler, _ = _mock_handler_sequence([503, 503, 503])
+        config = RetryConfig(
+            max_retries=3,
+            backoff_factor=0.01,
+            retryable_status_codes=frozenset({503}),
+        )
+        inner = httpx.MockTransport(handler)
+        collector = _make_collector()
+        transport = RetryTransport(inner, config, metrics=collector)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            with pytest.raises(httpx.HTTPStatusError):
+                await client.get("http://test/api")
+
+        points = collector._buffers.get("http_client_retries_total", [])
+        assert len(points) == 4  # 3 次状态码重试 + 1 次耗尽
+
+    @pytest.mark.asyncio
+    async def test_metrics_none_no_overhead(self):
+        """metrics=None（默认）时重试仍正常工作，无指标记录。"""
+        handler, _ = _mock_handler_sequence([503, 200])
+        config = RetryConfig(
+            max_retries=3,
+            backoff_factor=0.01,
+            retryable_status_codes=frozenset({503}),
+        )
+        inner = httpx.MockTransport(handler)
+        transport = RetryTransport(inner, config)  # metrics 默认 None
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            response = await client.get("http://test/api")
+
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_metrics_none_no_retry_no_error(self):
+        """metrics=None 且无重试时正常返回。"""
+        config = RetryConfig(max_retries=3)
+        inner = httpx.MockTransport(_mock_handler(200))
+        transport = RetryTransport(inner, config)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            response = await client.get("http://test/api")
+
+        assert response.status_code == 200

@@ -93,11 +93,19 @@ class FastApiConfig(BaseModel):
     cors: CorsConfig = CorsConfig()
     auth: AuthConfig | None = None
     log: LogConfig | None = None           # 日志配置，传入则自动配置 loguru
+    metrics: MetricsCollector | None = None  # 指标采集器，传入则在请求中间件中记录 http_requests_total / http_request_duration_seconds
     health_prefix: str = "/health"
     enable_request_logging: bool = True
     enable_error_handlers: bool = True
     enable_context_middleware: bool = True    # 是否启用请求上下文中间件（W3C Trace Context）
 ```
+
+> **指标采集**：传入 `MetricsCollector` 后，`RequestLoggingMiddleware` 会在每个请求结束时记录：
+> - `http_requests_total` (counter)：labels = `{method, path, status}`
+> - `http_request_duration_seconds` (histogram)：labels = `{method, path}`
+>
+> `metrics=None`（默认）时不执行任何采集逻辑（零开销）。采集过程中的异常被静默吞掉，不影响请求。
+> MetricsCollector 的生命周期（`init`/`close`）由调用方负责，`create_app` 不代管。
 
 ### AuthConfig
 
@@ -141,6 +149,9 @@ async def protected(user = Depends(jwt_auth.get_current_user)):
 @app.get("/admin", dependencies=[Depends(jwt_auth.require_scopes("admin"))])
 async def admin(): ...
 ```
+
+**认证后自动注入 user_id：** `get_current_user` 认证成功后，会将 token 的 `sub`（user_id）写入请求上下文（`ctx.set("user_id", ...)`）。后续中间件、路由处理函数、日志均可通过 `ctx.get("user_id")` 获取当前用户 ID，无需重复解析 token。认证失败时不注入。需配合 `ContextMiddleware`（`create_app` 默认启用）或手动 `request_context()` 使用。
+
 
 ### ApiKeyAuth
 
@@ -186,5 +197,9 @@ async def get_item(item_id: int):
 
 1. **CORS** — 跨域资源共享
 2. **ContextMiddleware** — 解析 W3C `traceparent` 请求头创建 child span（共享上游 trace_id），缺失时降级为根 trace；注入 trace_id / span_id / client_ip 到请求上下文，响应头回传 `traceparent`。受 `enable_context_middleware` 控制，默认启用
-3. **RequestLoggingMiddleware** — 请求日志，记录 method、path、status、耗时，从请求上下文读取 trace_id。受 `enable_request_logging` 控制
+3. **RequestLoggingMiddleware** — 请求日志，记录 method、path、status、耗时，从请求上下文读取 trace_id。当 `config.metrics` 不为 None 时额外记录 `http_requests_total` (counter) 和 `http_request_duration_seconds` (histogram)。受 `enable_request_logging` 控制
 4. **全局异常处理器** — AppError、RequestValidationError、Exception。受 `enable_error_handlers` 控制
+
+## 日志上下文自动注入
+
+当 `config.log is not None` 时，`create_app()` 在配置 loguru 后自动调用 `enable_log_injection()`，将请求上下文字段（trace_id、span_id 等）注入每条日志的 `extra`。该函数幂等，多次调用不会叠加 patcher。

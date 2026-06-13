@@ -124,6 +124,10 @@ class Cache(
         注意: 此方法会通过 PING 验证连接可用性。
         连接失败时会清理资源并抛出异常。
 
+        日志:
+        - DEBUG: 连接池创建时记录 "Redis 连接池已创建"
+        - INFO:  初始化成功后记录 "Cache 初始化 | redis_url=... max_connections=..."
+
         Raises:
             redis.exceptions.RedisError: 连接 Redis 失败时抛出
         """
@@ -141,6 +145,7 @@ class Cache(
             health_check_interval=self._config.health_check_interval,
             decode_responses=self._config.decode_responses,
         )
+        logger.debug("Redis 连接池已创建")
 
         self._client = Redis(connection_pool=self._pool)
 
@@ -155,9 +160,9 @@ class Cache(
             raise
 
         logger.info(
-            "Redis 连接池初始化完成 | max_connections={} health_check={}s",
+            "Cache 初始化 | redis_url={} max_connections={}",
+            self._config.url,
             self._config.max_connections,
-            self._config.health_check_interval,
         )
 
     async def close(self) -> None:
@@ -166,9 +171,12 @@ class Cache(
 
         在 FastAPI lifespan shutdown 时调用，确保无连接泄漏。
         关闭后 _client 和 _pool 置为 None，可安全重新 init()。
+
+        日志:
+        - INFO: 关闭成功后记录 "Cache 已关闭"
         """
         if self._client is not None:
             await self._client.aclose()
             self._client = None
             self._pool = None
-            logger.info("Redis 连接池已关闭")
+            logger.info("Cache 已关闭")

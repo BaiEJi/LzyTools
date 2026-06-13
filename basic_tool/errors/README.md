@@ -220,7 +220,11 @@ CommonErrors.codes()
 ### `handler.py` — setup_error_handlers
 
 ```python
-def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> None
+def setup_error_handlers(
+    app: FastAPI,
+    config: ErrorConfig | None = None,
+    on_error: Callable[[str, int], None] | None = None,
+) -> None
 ```
 
 注册 FastAPI 全局异常处理器。统一响应格式为 `{"code": "...", "message": "..."}`。
@@ -235,6 +239,8 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
 
 所有异常都会通过 loguru 记录结构化日志，包含请求方法、路径和 trace_id（从请求上下文 `ctx.get("trace_id")` 读取，由 ContextMiddleware 注入）。
 
+`on_error` 回调会透传给内部每次 `log_error()` 调用，详见下方 [回调协议（on_error）](#回调协议on_error)。
+
 ```python
 from fastapi import FastAPI
 from basic_tool.errors import setup_error_handlers, ErrorConfig
@@ -244,6 +250,41 @@ setup_error_handlers(app)
 
 # 或自定义配置
 setup_error_handlers(app, ErrorConfig(include_context=True))
+
+# 或注入错误指标回调
+setup_error_handlers(app, on_error=lambda code, status: metrics.counter(code).inc())
+```
+
+---
+
+### 回调协议（on_error）
+
+`log_error()` 和 `setup_error_handlers()` 均接受可选的 `on_error` 回调，签名为：
+
+```python
+on_error(error_code: str, http_status: int) -> None
+```
+
+日志记录完成后，回调会被调用：`AppError` 传入其 `.code` 和 `.http_status`；非 `AppError` 传入 `("UNKNOWN", 500)`。回调内部异常会被静默吞掉，绝不中断错误处理流程。
+
+**为什么用回调而不是直接 import metrics？**
+
+直接 `from basic_tool import metrics` 会形成 3-节点循环依赖：
+
+```
+errors → metrics → redis → errors
+```
+
+（redis 中的 `RateLimitError` 是 `AppError` 的子类。）通过回调协议，`errors` 保持为 DAG 叶子节点，由调用方（如应用入口）注入 metrics 集成，避免循环导入。
+
+```python
+from basic_tool.errors import setup_error_handlers
+from basic_tool.metrics import increment_error  # 假设的 metrics API
+
+def _on_error(code: str, http_status: int) -> None:
+    increment_error(code, http_status)
+
+setup_error_handlers(app, on_error=_on_error)
 ```
 
 ---

@@ -16,6 +16,7 @@ import httpx
 from loguru import logger
 
 from basic_tool.http_client.config import CircuitBreakerConfig, RetryConfig
+from basic_tool.metrics.collector import MetricsCollector
 
 
 class RetryTransport(httpx.AsyncBaseTransport):
@@ -26,17 +27,26 @@ class RetryTransport(httpx.AsyncBaseTransport):
     Args:
         inner: 被包装的底层 transport。
         config: 重试配置。
+        metrics: 可选的 MetricsCollector，提供时每次重试记录
+            ``http_client_retries_total``（counter）。None 表示不采集。
     """
 
-    def __init__(self, inner: httpx.AsyncBaseTransport, config: RetryConfig) -> None:
+    def __init__(
+        self,
+        inner: httpx.AsyncBaseTransport,
+        config: RetryConfig,
+        metrics: MetricsCollector | None = None,
+    ) -> None:
         """初始化 RetryTransport。
 
         Args:
             inner: 被包装的底层 transport。
             config: 重试配置。
+            metrics: 可选的 MetricsCollector，提供时记录重试 counter。
         """
         self._inner = inner
         self._config = config
+        self._metrics = metrics
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         """发送请求，失败时自动重试。
@@ -70,6 +80,7 @@ class RetryTransport(httpx.AsyncBaseTransport):
                     attempt + 1, self._config.max_retries,
                     response.status_code, request.url,
                 )
+                self._record_retry(request.url)
 
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 last_exc = e
@@ -78,6 +89,7 @@ class RetryTransport(httpx.AsyncBaseTransport):
                     attempt + 1, self._config.max_retries,
                     type(e).__name__, request.url,
                 )
+                self._record_retry(request.url)
 
             # 退避等待
             if attempt < self._config.max_retries - 1:
@@ -89,7 +101,19 @@ class RetryTransport(httpx.AsyncBaseTransport):
             "HTTP 请求重试耗尽 | max={} url={}",
             self._config.max_retries, request.url,
         )
+        self._record_retry(request.url)
         raise last_exc
+
+    def _record_retry(self, url: Any) -> None:
+        """记录一次重试事件。metrics 为 None 时零开销；记录失败不影响重试逻辑。"""
+        if self._metrics is None:
+            return
+        try:
+            self._metrics.counter(
+                "http_client_retries_total", labels={"url": str(url)}
+            )
+        except Exception:
+            logger.debug("retry metrics 记录失败", exc_info=True)
 
 
 class CircuitBreakerTransport(httpx.AsyncBaseTransport):

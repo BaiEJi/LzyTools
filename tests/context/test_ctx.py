@@ -173,6 +173,23 @@ class TestLogInjection:
 
         logger.remove()
 
+    def test_enable_log_injection_idempotent(self):
+        """enable_log_injection() 幂等：多次调用不会叠加 patcher。"""
+        import loguru
+
+        import basic_tool.context.log_extra as log_extra
+        from basic_tool.context.log_extra import enable_log_injection
+
+        log_extra._log_injection_enabled = False
+
+        enable_log_injection()
+        assert log_extra._log_injection_enabled is True
+
+        options_after_first = loguru.logger._options
+
+        enable_log_injection()
+        assert loguru.logger._options is options_after_first
+
 
 class TestPropagation:
     """HTTP 头传播与上下文序列化测试。"""

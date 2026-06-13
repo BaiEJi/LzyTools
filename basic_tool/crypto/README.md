@@ -295,21 +295,24 @@ config = CryptoConfig(
 
 #### 异常类型
 
-所有异常继承自 `CryptoError`，便于上层统一捕获。
+所有异常继承自 `CryptoError`（进而继承 `AppError`），便于上层统一捕获，并可被错误处理中间件转换为标准化 JSON 响应。每个异常携带 `code` 与 `http_status` 属性。
 
 ```
-CryptoError                       # 基础异常
-├── DecryptionError               # 解密失败（密钥错误、密文损坏、TTL 过期）
-├── SignatureVerificationError    # 签名验证失败
-└── InvalidKeyError               # 密钥无效
+AppError                          # 业务异常基类（basic_tool.errors）
+└── CryptoError                   # 密码学基础异常 (code=CRYPTO_ERROR, http_status=500)
+    ├── DecryptionError           # 解密失败 (code=DECRYPTION_ERROR, http_status=400)
+    ├── SignatureVerificationError# 签名验证失败 (code=SIGNATURE_VERIFICATION_FAILED, http_status=403)
+    └── InvalidKeyError           # 密钥无效 (code=INVALID_KEY, http_status=400)
 ```
 
-| 异常 | 抛出场景 |
-|------|----------|
-| `CryptoError` | 基础异常，一般不直接抛出，用于统一捕获 |
-| `DecryptionError` | `decrypt` / `decrypt_str` 解密失败时抛出 |
-| `SignatureVerificationError` | 签名验证相关错误（当前 `sign.verify` 返回布尔值不抛此异常，保留供未来使用） |
-| `InvalidKeyError` | `fernet_key` 为空或格式无效时抛出 |
+| 异常 | code | http_status | 抛出场景 |
+|------|------|-------------|----------|
+| `CryptoError` | `CRYPTO_ERROR` | `500` | 基础异常，一般不直接抛出，用于统一捕获 |
+| `DecryptionError` | `DECRYPTION_ERROR` | `400` | `decrypt` / `decrypt_str` 解密失败时抛出 |
+| `SignatureVerificationError` | `SIGNATURE_VERIFICATION_FAILED` | `403` | 签名验证相关错误（当前 `sign.verify` 返回布尔值不抛此异常，保留供未来使用） |
+| `InvalidKeyError` | `INVALID_KEY` | `400` | `fernet_key` 为空或格式无效时抛出 |
+
+所有异常的构造签名均为 `__init__(self, message: str)`，可直接 `raise DecryptionError("...")` 使用，无需提供 code/http_status。这些异常同时是 `AppError` 的实例，因此 `to_dict()`、`detail`、`status_code` 等属性均可用。
 
 ---
 

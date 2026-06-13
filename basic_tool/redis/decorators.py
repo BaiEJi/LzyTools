@@ -32,6 +32,7 @@ from typing import Any, Callable
 
 from loguru import logger
 
+from basic_tool.errors import AppError
 from basic_tool.redis.client import Cache
 from basic_tool.redis.locks import Lock
 
@@ -39,17 +40,44 @@ from basic_tool.redis.locks import Lock
 _MISSING = object()
 
 
-class RateLimitError(Exception):
-    """请求频率超限异常。"""
+class RateLimitError(AppError):
+    """请求频率超限异常。
+
+    继承自 AppError，携带 http_status=429，可被 FastAPI 全局异常处理器
+    自动转换为标准 JSON 响应。同时保留 key/count/max_requests/window 属性
+    以保持向后兼容。
+
+    Attributes:
+        key: 触发限流的维度标识。
+        count: 当前窗口内已发生的请求数。
+        max_requests: 窗口内允许的最大请求数。
+        window: 时间窗口秒数。
+    """
 
     def __init__(self, key: str, count: int, max_requests: int, window: int) -> None:
+        """初始化 RateLimitError。
+
+        Args:
+            key: 触发限流的维度标识。
+            count: 当前窗口内已发生的请求数。
+            max_requests: 窗口内允许的最大请求数。
+            window: 时间窗口秒数。
+        """
         self.key = key
         self.count = count
         self.max_requests = max_requests
         self.window = window
         super().__init__(
-            f"请求频率超限 | key={key} "
-            f"count={count} max={max_requests} window={window}s"
+            code="RATE_LIMITED",
+            message=f"请求频率超限 | key={key} "
+            f"count={count} max={max_requests} window={window}s",
+            http_status=429,
+            context={
+                "key": key,
+                "count": count,
+                "max_requests": max_requests,
+                "window": window,
+            },
         )
 
 
@@ -86,6 +114,8 @@ def cached(
     ttl: int = 300,
     ttl_jitter: int = 0,
     key_builder: Callable[..., str] | None = None,
+    on_cache_hit: Callable[[str], None] | None = None,
+    on_cache_miss: Callable[[str], None] | None = None,
 ) -> Callable:
     """
     缓存异步函数返回值的装饰器。
@@ -106,6 +136,12 @@ def cached(
         key_builder: 自定义 key 生成函数。
                     签名 (func_name, filtered_args, filtered_kwargs) -> str
                     注意: args/kwargs 已过滤掉 Cache 实例
+        on_cache_hit: 缓存命中时的回调函数，签名 (cache_key: str) -> None。
+                     通过回调协议实现外部指标采集（如缓存命中率统计），
+                     避免 redis 模块直接依赖 metrics 模块造成循环导入。
+                     回调中的异常会被静默吞掉，不影响缓存逻辑。
+        on_cache_miss: 缓存未命中时的回调函数，签名 (cache_key: str) -> None。
+                      行为与 on_cache_hit 相同，在缓存未命中、执行被装饰函数前调用。
 
     使用示例:
         @cached(prefix="user", ttl=600)
@@ -114,6 +150,16 @@ def cached(
 
         # 调用时自动缓存
         result = await get_user(cache, user_id=123)
+
+        # 通过回调采集缓存命中率（避免 redis 依赖 metrics）
+        @cached(
+            prefix="user",
+            ttl=600,
+            on_cache_hit=lambda k: metrics.incr("cache.hit"),
+            on_cache_miss=lambda k: metrics.incr("cache.miss"),
+        )
+        async def get_user_tracked(cache: Cache, user_id: int):
+            return await db.query(...)
     """
 
     def decorator(func: Callable) -> Callable:
@@ -144,7 +190,18 @@ def cached(
             # 用 exists 检查区分 "缓存未命中" 和 "缓存值为 None"
             cached_val = await cache.get_json(key)
             if cached_val is not _MISSING and await cache.exists(key):
+                if on_cache_hit is not None:
+                    try:
+                        on_cache_hit(key)
+                    except Exception:
+                        pass
                 return cached_val
+
+            if on_cache_miss is not None:
+                try:
+                    on_cache_miss(key)
+                except Exception:
+                    pass
 
             result = await func(*args, **kwargs)
 

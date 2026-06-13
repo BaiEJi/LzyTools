@@ -9,6 +9,7 @@ from typing import Any
 
 from loguru import logger
 
+from basic_tool.context.propagation import serialize_context
 from basic_tool.task_queue.config import TaskConfig
 from basic_tool.task_queue.task import validate_task_name
 
@@ -99,6 +100,10 @@ class TaskQueue:
     ) -> str | None:
         """入队一个任务。
 
+        自动序列化当前请求上下文（trace_id、user_id 等）随任务传递，
+        Worker 执行时通过 _wrap_function 恢复上下文，实现跨进程传播。
+        无活跃上下文时传递空字典，Worker 端跳过恢复。
+
         Args:
             name: 任务名称（必须已在 @task 注册表中）。
             *args: 任务参数（不含 ctx，Worker 自动注入）。
@@ -112,6 +117,9 @@ class TaskQueue:
         """
         validate_task_name(name)
 
+        # 序列化当前请求上下文，供 Worker 进程恢复
+        ctx_snapshot = serialize_context()
+
         logger.info(
             "任务入队 | name={} job_id={} defer_by={} expires={}",
             name, _job_id, _defer_by, _expires,
@@ -120,6 +128,7 @@ class TaskQueue:
         job = await self.client.enqueue_job(
             name,
             *args,
+            _context_snapshot=ctx_snapshot,
             _queue_name=self._config.queue_name,
             _job_id=_job_id,
             _defer_by=_defer_by,

@@ -27,6 +27,8 @@
 
 from basic_tool.context.ctx import _context_data
 
+_log_injection_enabled = False
+
 
 def _inject_context(record: dict) -> None:
     """
@@ -55,6 +57,9 @@ def enable_log_injection() -> None:
     调用后，所有 loguru 日志记录（包括 ``basic_tool.logger.get()``
     返回的 logger）都会自动包含当前请求上下文中的字段。
 
+    本函数是幂等的：多次调用不会叠加 patcher。首次成功调用后通过
+    模块级 ``_log_injection_enabled`` 守卫阻止重复 patch。
+
     实现说明:
         ``loguru.logger.patch()`` 返回一个新的 Core 实例，不会修改
         原始的全局 ``loguru.logger``。本函数通过将 patched 实例的
@@ -64,7 +69,13 @@ def enable_log_injection() -> None:
     Returns:
         None
     """
+    global _log_injection_enabled
+
+    if _log_injection_enabled:
+        return
+
     import loguru
 
     patched = loguru.logger.patch(_inject_context)
     loguru.logger._options = patched._options
+    _log_injection_enabled = True

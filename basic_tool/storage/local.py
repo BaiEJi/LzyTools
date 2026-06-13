@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import aiofiles
+from loguru import logger
 
 from basic_tool.storage.backend import FileInfo, StorageBackend
 from basic_tool.storage.config import StorageConfig
@@ -90,12 +91,15 @@ class LocalBackend(StorageBackend):
     async def init(self) -> None:
         """初始化后端：按配置创建或校验 base_dir。
 
+        初始化时通过 loguru 记录 INFO 日志（base_dir）。
+
         auto_create_dir=True 时创建目录（含父目录，exist_ok）；
         auto_create_dir=False 且目录不存在时抛出 FileNotFoundError。
 
         Raises:
             FileNotFoundError: auto_create_dir=False 且 base_dir 不存在。
         """
+        logger.info("LocalBackend 初始化 | base_dir={}", self._config.base_dir)
         if self._config.auto_create_dir:
             self._base_dir.mkdir(parents=True, exist_ok=True)
         elif not self._base_dir.exists():

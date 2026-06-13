@@ -23,6 +23,52 @@ class TestCacheLifecycle:
         await cache.init()
 
 
+class TestCacheLifecycleLogging:
+    """Cache 生命周期日志测试。"""
+
+    async def test_init_and_close_logging(self, monkeypatch):
+        """init() 和 close() 应输出生命周期日志。"""
+        import fakeredis.aioredis
+        from loguru import logger
+        from redis.asyncio import ConnectionPool
+
+        from basic_tool.redis import Cache, RedisConfig
+
+        logs: list[str] = []
+
+        def _sink(message) -> None:
+            logs.append(str(message))
+
+        handler_id = logger.add(_sink, format="{message}", level="DEBUG")
+
+        try:
+            fake = fakeredis.aioredis.FakeRedis(decode_responses=True)
+            monkeypatch.setattr(
+                ConnectionPool,
+                "from_url",
+                lambda *a, **kw: fake.connection_pool,
+            )
+
+            config = RedisConfig(
+                url="redis://localhost:6379/0", max_connections=10
+            )
+            cache = Cache(config)
+            await cache.init()
+
+            log_text = "\n".join(logs)
+            assert "Redis 连接池已创建" in log_text
+            assert "Cache 初始化" in log_text
+            assert "redis_url=redis://localhost:6379/0" in log_text
+            assert "max_connections=10" in log_text
+
+            await cache.close()
+
+            log_text = "\n".join(logs)
+            assert "Cache 已关闭" in log_text
+        finally:
+            logger.remove(handler_id)
+
+
 class TestStringOps:
     """String 操作测试。"""
 

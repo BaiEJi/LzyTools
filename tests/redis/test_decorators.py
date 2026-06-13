@@ -5,6 +5,7 @@
 import pytest
 import asyncio
 import time
+from unittest.mock import MagicMock
 
 from basic_tool.redis import Cache
 
@@ -66,6 +67,81 @@ class TestCached:
         assert r1 is None
         assert r2 is None
         assert call_count == 1  # 第二次应该走缓存
+
+    async def test_cache_hit_miss_callbacks(self, cache):
+        """on_cache_hit/on_cache_miss 在命中/未命中时分别触发。"""
+        from basic_tool.redis.decorators import cached
+
+        on_hit = MagicMock()
+        on_miss = MagicMock()
+
+        @cached(prefix="cb", ttl=60, on_cache_hit=on_hit, on_cache_miss=on_miss)
+        async def get_data(c: Cache, key: str):
+            return {"key": key}
+
+        # 第一次：未命中
+        await get_data(cache, key="abc")
+        on_miss.assert_called_once()
+        on_hit.assert_not_called()
+
+        # 第二次：命中
+        await get_data(cache, key="abc")
+        on_hit.assert_called_once()
+
+        # 两次调用的 key 一致
+        miss_key = on_miss.call_args.args[0]
+        hit_key = on_hit.call_args.args[0]
+        assert miss_key == hit_key
+        assert miss_key.startswith("cb:get_data:")
+
+    async def test_callbacks_default_none(self, cache):
+        """不传回调时缓存行为不变。"""
+        from basic_tool.redis.decorators import cached
+
+        call_count = 0
+
+        @cached(prefix="no_cb", ttl=60)
+        async def get_data(c: Cache, key: str):
+            nonlocal call_count
+            call_count += 1
+            return {"key": key, "call": call_count}
+
+        r1 = await get_data(cache, key="abc")
+        r2 = await get_data(cache, key="abc")
+
+        assert r1 == r2
+        assert call_count == 1  # 第二次走缓存
+
+    async def test_callback_exception_swallowed_on_hit(self, cache):
+        """on_cache_hit 抛异常不应影响缓存返回。"""
+        from basic_tool.redis.decorators import cached
+
+        def boom(_key: str) -> None:
+            raise RuntimeError("callback exploded")
+
+        @cached(prefix="boom_hit", ttl=60, on_cache_hit=boom)
+        async def get_data(c: Cache, key: str):
+            return {"key": key}
+
+        r1 = await get_data(cache, key="abc")
+        # 命中时回调抛异常，但仍返回缓存值
+        r2 = await get_data(cache, key="abc")
+        assert r1 == r2 == {"key": "abc"}
+
+    async def test_callback_exception_swallowed_on_miss(self, cache):
+        """on_cache_miss 抛异常不应影响缓存逻辑。"""
+        from basic_tool.redis.decorators import cached
+
+        def boom(_key: str) -> None:
+            raise RuntimeError("callback exploded")
+
+        @cached(prefix="boom_miss", ttl=60, on_cache_miss=boom)
+        async def get_data(c: Cache, key: str):
+            return {"key": key}
+
+        # 未命中时回调抛异常，但仍正常执行并返回
+        result = await get_data(cache, key="abc")
+        assert result == {"key": "abc"}
 
 
 class TestRateLimit:
@@ -133,6 +209,21 @@ class TestRateLimit:
         assert exc_info.value.key == "test:attr"
         assert exc_info.value.max_requests == 1
         assert exc_info.value.window == 60
+
+    async def test_rate_limit_error_is_app_error(self, cache):
+        """RateLimitError 是 AppError 子类，携带 429 状态码。"""
+        from basic_tool.errors import AppError
+        from basic_tool.redis.decorators import RateLimitError
+
+        e = RateLimitError(key="k", count=5, max_requests=3, window=60)
+
+        assert isinstance(e, AppError)
+        assert e.http_status == 429
+        assert e.code == "RATE_LIMITED"
+        assert e.key == "k"
+        assert e.count == 5
+        assert e.max_requests == 3
+        assert e.window == 60
 
 
 class TestSynchronized:

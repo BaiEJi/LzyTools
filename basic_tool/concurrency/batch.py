@@ -20,6 +20,10 @@ async def gather_with_limit(
 ) -> list[T]:
     """Execute coroutines with a concurrency limit.
 
+    请求上下文传播: 内部通过 asyncio.TaskGroup / asyncio.create_task 调度，
+    自动继承当前 ContextVar 快照（Python 3.11+），``ctx.get("trace_id")`` 等值
+    在各子协程中可见。上下文为快照拷贝，跨任务互不影响。
+
     Args:
         *coros: Coroutines to execute.
         max_concurrency: Maximum concurrent tasks. Must be >= 1.
@@ -141,6 +145,10 @@ async def gather_with_retry(
 
     Each coro_factory is called to create a fresh coroutine for each attempt,
     avoiding the "coroutine already awaited" error on retry.
+
+    请求上下文传播: 内部通过 asyncio.create_task 调度，自动继承当前 ContextVar 快照
+    （Python 3.11+），``ctx.get("trace_id")`` 等值在各子协程及其重试尝试中可见。
+    上下文为快照拷贝，跨任务互不影响。
 
     Args:
         *coro_factories: Callables that return fresh coroutines.

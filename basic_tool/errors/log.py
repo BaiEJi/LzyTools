@@ -1,9 +1,16 @@
 """错误日志集成。
 
 提供 log_error() 函数，根据异常类型和 HTTP 状态码选择合适的日志级别。
+
+回调协议：
+    log_error() 接受可选的 on_error 回调，用于将错误码和 HTTP 状态码上报给外部
+    指标系统（如 metrics）。errors 模块故意不直接依赖 metrics 模块，因为这会形成
+    循环依赖：errors → metrics → redis → errors（redis 中的 RateLimitError 是
+    AppError 子类）。通过回调协议，errors 保持为 DAG 叶子节点，由调用方（如
+    应用入口）注入 metrics 集成。
 """
 
-from typing import Any
+from typing import Any, Callable
 
 from loguru import logger
 
@@ -19,13 +26,17 @@ def log_error(
     request_method: str = "",
     request_path: str = "",
     trace_id: str = "",
+    on_error: Callable[[str, int], None] | None = None,
 ) -> None:
-    """记录错误日志。
+    """记录错误日志，并可选地通过回调上报错误指标。
 
     根据异常类型选择日志级别：
     - AppError 5xx → ERROR（含堆栈）
     - AppError 4xx → WARNING
     - 非 AppError → ERROR（含堆栈）
+
+    日志记录完成后，若提供 on_error 回调，则以 (error_code, http_status) 调用之。
+    回调失败不会中断错误处理流程（内部 try/except 静默吞掉异常）。
 
     Args:
         exc: 异常对象。
@@ -33,6 +44,9 @@ def log_error(
         request_method: 请求方法（GET/POST 等），可选。
         request_path: 请求路径，可选。
         trace_id: 链路追踪 ID，可选。
+        on_error: 错误指标回调，签名为 ``on_error(error_code: str, http_status: int) -> None``。
+            AppError 传入其 ``.code`` 和 ``.http_status``；非 AppError 传入
+            ``("UNKNOWN", 500)``。用于在不引入循环依赖的前提下对接 metrics 系统。
     """
     from basic_tool.errors.app_error import AppError
 
@@ -81,3 +95,14 @@ def log_error(
             str(exc),
         )
         bound_logger.exception("异常堆栈")
+
+    # 上报错误指标（回调协议，避免 errors → metrics 循环依赖）
+    if on_error is not None:
+        try:
+            if isinstance(exc, AppError):
+                on_error(exc.code, exc.http_status)
+            else:
+                on_error("UNKNOWN", 500)
+        except Exception:
+            # 回调失败不得中断错误处理流程
+            pass

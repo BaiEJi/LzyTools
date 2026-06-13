@@ -118,6 +118,7 @@ class TestTaskQueueEnqueue:
         initialized_queue._redis.enqueue_job.assert_called_once_with(
             "send_email",
             "user@example.com",
+            _context_snapshot={},
             _queue_name="test:queue",
             _job_id=None,
             _defer_by=None,
@@ -149,6 +150,7 @@ class TestTaskQueueEnqueue:
         initialized_queue._redis.enqueue_job.assert_called_once_with(
             "send_email",
             "user@example.com",
+            _context_snapshot={},
             _queue_name="test:queue",
             _job_id="dedup-1",
             _defer_by=30,
@@ -178,6 +180,27 @@ class TestTaskQueueEnqueue:
 
         job_id = await initialized_queue.enqueue("nonexistent_task")
         assert job_id == "job-789"
+
+    @pytest.mark.asyncio
+    async def test_enqueue_serializes_active_context(self, initialized_queue):
+        """入队时序列化当前活跃请求上下文。"""
+        from basic_tool.context.ctx import request_context
+
+        @task()
+        async def send_email(ctx, to: str):
+            pass
+
+        mock_job = MagicMock()
+        mock_job.job_id = "job-ctx-1"
+        initialized_queue._redis.enqueue_job = AsyncMock(return_value=mock_job)
+
+        with request_context(trace_id="trace-abc", user_id=42):
+            await initialized_queue.enqueue("send_email", "user@example.com")
+
+        call_kwargs = initialized_queue._redis.enqueue_job.call_args
+        snapshot = call_kwargs.kwargs["_context_snapshot"]
+        assert snapshot["trace_id"] == "trace-abc"
+        assert snapshot["user_id"] == 42
 
 
 class TestTaskQueueJobOps:

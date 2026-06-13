@@ -55,6 +55,14 @@ class Cache:
 | `async close() -> None` | 优雅关闭连接池。lifespan shutdown 调用 |
 | `client -> Redis` | 底层 `redis.asyncio.Redis` 实例，用于调用任意未封装的命令 |
 
+生命周期日志（`loguru`）：
+
+| 事件 | 级别 | 消息 |
+|---|---|---|
+| 连接池创建 | DEBUG | `Redis 连接池已创建` |
+| 初始化成功 | INFO | `Cache 初始化 \| redis_url=... max_connections=...` |
+| 关闭完成 | INFO | `Cache 已关闭` |
+
 #### String 操作
 
 | 方法 | 说明 |
@@ -288,7 +296,15 @@ class Lock:
 #### `@cached`
 
 ```python
-@cached(*, prefix: str, ttl: int = 300, ttl_jitter: int = 0, key_builder=None)
+@cached(
+    *,
+    prefix: str,
+    ttl: int = 300,
+    ttl_jitter: int = 0,
+    key_builder=None,
+    on_cache_hit: Callable[[str], None] | None = None,
+    on_cache_miss: Callable[[str], None] | None = None,
+)
 ```
 
 缓存异步函数返回值。被装饰函数的参数中需包含 `Cache` 实例。
@@ -299,6 +315,32 @@ None 返回值也会被缓存（通过 exists 检查区分缓存未命中）。
 - `ttl_jitter`: TTL 随机抖动（防缓存雪崩）
 - `key_builder`: 自定义 key 生成函数 `(func_name, filtered_args, filtered_kwargs) -> str`
   （args/kwargs 已过滤 Cache 实例）
+- `on_cache_hit`: 缓存命中回调，签名 `(cache_key: str) -> None`，默认 `None`
+- `on_cache_miss`: 缓存未命中回调，签名 `(cache_key: str) -> None`，默认 `None`
+
+**缓存命中率回调协议（避免循环导入）**
+
+`on_cache_hit` / `on_cache_miss` 通过依赖注入实现外部指标采集，
+**而不需要** `redis` 模块导入 `basic_tool.metrics`（`metrics/writer.py` 已经
+反向导入 `redis.Cache`，若 redis 再导入 metrics 将形成 2-cycle）。
+
+- 缓存命中时调用 `on_cache_hit(key)`，未命中时调用 `on_cache_miss(key)`
+- 回调中的异常被静默吞掉（`try/except Exception: pass`），**不会**影响缓存逻辑
+- 默认 `None` 时不调用任何回调，缓存行为与不带回调时完全一致
+
+```python
+from basic_tool.metrics import Metrics  # 外部调用方负责注入
+metrics = Metrics(...)
+
+@cached(
+    prefix="user",
+    ttl=600,
+    on_cache_hit=lambda k: metrics.incr("cache.hit", tags={"prefix": "user"}),
+    on_cache_miss=lambda k: metrics.incr("cache.miss", tags={"prefix": "user"}),
+)
+async def get_user(cache: Cache, user_id: int):
+    ...
+```
 
 #### `@rate_limit`
 
@@ -311,7 +353,8 @@ None 返回值也会被缓存（通过 exists 检查区分缓存未命中）。
 - `key`: 限流维度标识，支持 `{param}` 格式化占位符（如 `"user:{user_id}"`）
 - `max_requests`: 窗口内最大请求数
 - `window`: 时间窗口秒数
-- 抛出 `RateLimitError`（而非 `RuntimeError`），包含 `key`/`count`/`max_requests`/`window` 属性
+- 抛出 `RateLimitError`（继承自 `AppError`，`http_status=429`），包含 `key`/`count`/`max_requests`/`window` 属性
+  - 作为 `AppError` 子类，FastAPI 全局异常处理器会自动将其转换为 429 JSON 响应
 
 #### `@synchronized`
 

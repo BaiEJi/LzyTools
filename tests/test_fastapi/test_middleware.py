@@ -1,5 +1,7 @@
 """中间件和异常处理器测试。"""
 
+from unittest.mock import Mock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -62,6 +64,73 @@ class TestRequestLoggingMiddleware:
         assert resp.status_code == 200
         # 不崩溃，无 traceparent 响应头（RequestLoggingMiddleware 不再设置任何响应头）
         assert "traceparent" not in resp.headers
+
+
+class TestRequestLoggingMiddlewareMetrics:
+    """请求日志中间件的指标采集测试。"""
+
+    def test_metrics_recorded_when_provided(self):
+        """传入 MetricsCollector 时，每个请求记录 counter 和 histogram。"""
+        from basic_tool.fastapi import create_app
+        from basic_tool.fastapi.config import FastApiConfig
+        from basic_tool.metrics.collector import MetricsCollector
+        from basic_tool.metrics.config import MetricsConfig
+
+        collector = MetricsCollector(
+            MetricsConfig(service_name="test"), endpoint="http://localhost:8428"
+        )
+        config = FastApiConfig(metrics=collector, enable_context_middleware=False)
+        app = create_app(config)
+
+        client = TestClient(app)
+        resp = client.get("/health")
+        assert resp.status_code == 200
+
+        # counter 记录了 http_requests_total
+        counters = collector._buffers.get("http_requests_total", [])
+        assert len(counters) == 1
+        point = counters[0]
+        assert point.name == "http_requests_total"
+        assert point.labels == {"method": "GET", "path": "/health", "status": "200"}
+        assert point.value == 1.0
+
+        # histogram 记录了 http_request_duration_seconds
+        histograms = collector._buffers.get("http_request_duration_seconds", [])
+        assert len(histograms) == 1
+        hpoint = histograms[0]
+        assert hpoint.name == "http_request_duration_seconds"
+        assert hpoint.labels == {"method": "GET", "path": "/health"}
+        assert hpoint.value > 0
+
+    def test_zero_overhead_when_metrics_is_none(self):
+        """metrics 为 None 时（默认）请求正常，缓冲区为空。"""
+        from basic_tool.fastapi import create_app
+        from basic_tool.fastapi.config import FastApiConfig
+
+        config = FastApiConfig(enable_context_middleware=False)
+        app = create_app(config)
+
+        client = TestClient(app)
+        resp = client.get("/health")
+        assert resp.status_code == 200
+
+    def test_metrics_failure_does_not_break_request(self):
+        """采集器抛异常时请求不受影响，仍返回 200。"""
+        bad_metrics = Mock()
+        bad_metrics.counter.side_effect = RuntimeError("boom")
+        bad_metrics.histogram.side_effect = RuntimeError("boom")
+
+        app = FastAPI()
+        app.add_middleware(RequestLoggingMiddleware, metrics=bad_metrics)
+
+        @app.get("/test")
+        async def test_endpoint():
+            return {"ok": True}
+
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        assert resp.json() == {"ok": True}
 
 
 class TestSetupErrorHandlers:

@@ -1,0 +1,84 @@
+# F3: Real Manual QA — Raw Test Output
+
+Date: 2026-06-13
+Working dir: /home/lizy/projects/LzyProjs
+
+## Test 1: No circular imports
+Command: python -c "import basic_tool.fastapi; import basic_tool.redis; import basic_tool.metrics; import basic_tool.errors; import basic_tool.crypto; import basic_tool.http_client; import basic_tool.task_queue; import basic_tool.storage; import basic_tool.email; print('ALL IMPORTS OK')"
+Output:
+  ALL IMPORTS OK
+Result: PASS
+
+## Test 2: Idempotency
+Command: python -c "from basic_tool.context.log_extra import enable_log_injection; enable_log_injection(); enable_log_injection(); print('IDEMPOTENT OK')"
+Output:
+  IDEMPOTENT OK
+Result: PASS
+
+## Test 3: RateLimitError inheritance
+Command: python -c "...RateLimitError assertions..."
+Output:
+  RateLimitError VERIFIED
+Result: PASS
+Verified attrs: isinstance AppError, http_status==429, code=='RATE_LIMITED',
+               key=='user:123', count==5, max_requests==3, window==60
+
+## Test 4: CryptoError hierarchy
+Command: python -c "...CryptoError/DecryptionError/InvalidKeyError/SignatureVerificationError..."
+Output:
+  CryptoError hierarchy VERIFIED
+Result: PASS
+Verified:
+  - CryptoError: code='CRYPTO_ERROR', status=500, isinstance AppError
+  - DecryptionError: code='DECRYPTION_ERROR', status=400, isinstance AppError
+  - InvalidKeyError: code='INVALID_KEY', status=400, isinstance AppError
+  - SignatureVerificationError: code='SIGNATURE_VERIFICATION_FAILED', status=403, isinstance AppError
+
+## Test 5: Full test suite
+Command: python -m pytest tests/ -q
+Output (last lines):
+  555 passed, 1 skipped, 3 warnings in 10.99s
+Result: PASS (555 passed, 1 skipped — no failures)
+
+## Test 6: Forbidden imports
+- errors/*.py: PASS (no metrics imports)
+- redis/decorators.py: PASS (no metrics imports)
+- TYPE_CHECKING in actual code: PASS
+  NOTE: TYPE_CHECKING matches found only in `.sisyphus/` (notepad/plan docs), NOT in code.
+        Verified with: grep -rn "TYPE_CHECKING" basic_tool/ --exclude-dir=".sisyphus"
+        Result: PASS — no TYPE_CHECKING in actual source code
+
+## Test 7: MetricsCollector API
+Command: python -c "...MetricsCollector construction + counter/histogram check..."
+Output:
+  MetricsCollector constructed: MetricsCollector
+  MetricsCollector API VERIFIED
+Result: PASS (with note)
+NOTE: Original task script used `MetricsCollector(MetricsConfig())` — missing required
+      `endpoint` arg per actual API signature `MetricsCollector(config, endpoint)`.
+      Corrected call: `MetricsCollector(MetricsConfig(), endpoint='http://vm:8428/api/v1/import/prometheus')`.
+      This is a TEST SCRIPT bug, not a feature bug. The actual feature works as designed.
+
+## Test 8: Email task registered
+Command: python -c "...send_email_task registration check..."
+Output:
+  Email task VERIFIED
+Result: PASS
+
+## Test 9: Context propagation functions
+Command: python -c "...serialize_context + inject_headers_to_httpx checks..."
+Output:
+  Context propagation functions VERIFIED
+Result: PASS
+
+## Test 10: Worker AppError handling
+Command: python -c "..._wrap_function + AppError + assertions..."
+Output:
+  2026-06-13 23:02:18.226 | WARNING | basic_tool.task_queue.worker:_execute:117 - task 业务异常 跳过重试 | code=BIZ_ERROR message=business fail
+  Worker AppError handling VERIFIED: {'_error': True, 'code': 'BIZ_ERROR', 'message': 'business fail'}
+Result: PASS
+  - AppError caught by worker wrapper
+  - Returns dict with _error=True
+  - code preserved: 'BIZ_ERROR'
+  - message preserved: 'business fail'
+  - Skipped retry as designed (业务异常 = business exception = no retry)

@@ -18,7 +18,8 @@ basic_tool/email/
 ├── models.py            # Email / Attachment / InlineImage / SendResult
 ├── sender.py            # EmailSender ABC + SmtpSender 实现
 ├── dry_run.py           # DryRunSender 测试模式
-└── template.py          # TemplateRenderer 模板渲染（单独导入）
+├── template.py          # TemplateRenderer 模板渲染（单独导入）
+└── task.py              # send_email_task / setup_email_worker（@task 集成）
 ```
 
 ## API 文档
@@ -287,6 +288,55 @@ email = Email(
 )
 await sender.send(email)
 ```
+
+### 异步发送（@task 集成）
+
+通过 `basic_tool.task_queue` 的 `@task` 装饰器将邮件发送注册为 ARQ 任务，
+经 Redis 任务队列异步执行。`setup_email_worker()` 工厂返回启动/关闭回调，
+自动将 `SmtpSender` 注入 Worker 上下文 `ctx["email_sender"]`。
+
+```python
+from basic_tool.email import EmailConfig, send_email_task, setup_email_worker
+from basic_tool.task_queue.config import TaskConfig
+from basic_tool.task_queue.worker import WorkerRunner
+
+# 1. 配置邮件
+email_config = EmailConfig(
+    host="smtp.example.com",
+    username="noreply@example.com",
+    password="smtp-password",
+)
+
+# 2. 创建 Worker 回调（SmtpSender 在 startup 注入，shutdown 关闭连接）
+on_startup, on_shutdown = setup_email_worker(email_config)
+
+# 3. 启动 Worker（send_email_task 已通过 @task 自动注册）
+task_config = TaskConfig()
+runner = WorkerRunner(task_config, on_startup=on_startup, on_shutdown=on_shutdown)
+await runner.run()
+```
+
+入队发送（生产者侧）：
+
+```python
+from basic_tool.task_queue.queue import TaskQueue
+
+queue = TaskQueue(task_config)
+await queue.enqueue(
+    "send_email_task",
+    to=["user@example.com"],
+    subject="Welcome",
+    body="<h1>Hello!</h1>",
+    content_type="text/html",
+)
+```
+
+| 函数 | 签名 | 说明 |
+|---|---|---|
+| `send_email_task()` | `async (ctx, to, subject, body, content_type="text/plain", cc=None, bcc=None) -> SendResult` | `@task` 装饰的模块级异步函数。从 `ctx["email_sender"]` 获取 sender，构造 Email 并发送。sender 缺失时抛 `RuntimeError` |
+| `setup_email_worker()` | `(email_config: EmailConfig) -> tuple[on_startup, on_shutdown]` | 返回回调对：startup 创建 `SmtpSender` 注入 ctx；shutdown 调用 `sender.close()` |
+
+---
 
 ### 批量发送
 

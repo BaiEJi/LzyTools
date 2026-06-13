@@ -4,11 +4,12 @@ from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import Depends, FastAPI, Security
+from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.security import APIKeyHeader
 from fastapi.testclient import TestClient
 from jose import jwt
 
+from basic_tool.context.ctx import ctx, request_context
 from basic_tool.fastapi.auth import ApiKeyAuth, JWTAuth, TokenResponse
 from basic_tool.fastapi.config import AuthConfig
 
@@ -284,3 +285,47 @@ class TestApiKeyAuth:
         client = TestClient(app)
         resp = client.get("/data")
         assert resp.status_code == 403
+
+
+class TestJWTAuthContextInjection:
+    """JWT 认证成功后 user_id 注入请求上下文测试。"""
+
+    async def test_user_id_injected_on_success(self):
+        """认证成功后 ctx.get("user_id") 返回 token 的 sub 值。"""
+        config = _make_auth_config()
+        user = {"id": "ctx-user", "name": "Context User"}
+        auth = JWTAuth(config, user_loader=_make_user_loader({"ctx-user": user}))
+
+        token = auth.create_token({"sub": "ctx-user"})
+
+        async with request_context():
+            ctx.clear()
+            result = await auth.get_current_user(token=token)
+            assert result == user
+            assert ctx.get("user_id") == "ctx-user"
+
+    async def test_user_id_not_injected_on_invalid_token(self):
+        """无效 token 时 ctx 中不设置 user_id。"""
+        config = _make_auth_config()
+        auth = JWTAuth(config, user_loader=_make_user_loader())
+
+        async with request_context():
+            ctx.clear()
+            with pytest.raises(HTTPException) as exc_info:
+                await auth.get_current_user(token="invalid-token")
+            assert exc_info.value.status_code == 401
+            assert ctx.get("user_id") is None
+
+    async def test_user_id_not_injected_on_missing_user(self):
+        """用户不存在时 ctx 中不设置 user_id。"""
+        config = _make_auth_config()
+        auth = JWTAuth(config, user_loader=_make_user_loader({}))
+
+        token = auth.create_token({"sub": "nonexistent"})
+
+        async with request_context():
+            ctx.clear()
+            with pytest.raises(HTTPException) as exc_info:
+                await auth.get_current_user(token=token)
+            assert exc_info.value.status_code == 401
+            assert ctx.get("user_id") is None

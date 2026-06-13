@@ -458,3 +458,61 @@ config = ConcurrencyConfig(
 max_conc = config.max_concurrency
 timeout = config.default_timeout
 ```
+
+---
+
+## 请求上下文自动传播
+
+所有并发工具（`ConcurrencyPool` / `gather_with_limit` / `gather_with_retry` / `TaskGroup`）均基于 `asyncio.Task` 调度协程。Python 3.11+ 的 `asyncio.Task` 在创建时会自动 **复制当前 ContextVar 快照**，因此 `basic_tool.context.ctx` 中保存的 `trace_id`、`user_id` 等键值会自动传播到子任务中，无需手动传递。
+
+**关键特性：**
+
+- **自动继承** — 在调用并发工具前通过 `request_context(...)` 或 `ctx.set(...)` 写入的值，子任务内可直接读取。
+- **快照隔离** — 上下文是 **快照拷贝**（snapshot），而非跨任务共享的可变状态。子任务内的修改不会影响其他任务或父任务。
+
+**示例：trace_id 自动传播到并发任务**
+
+```python
+import asyncio
+from basic_tool.concurrency import gather_with_limit
+from basic_tool.context import ctx, request_context
+
+async def fetch(url: str) -> str:
+    # 子任务内可直接读取父任务设置的 trace_id
+    trace_id = ctx.get("trace_id")
+    return f"[{trace_id}] {url}"
+
+async def main():
+    # 在并发调用前设置请求上下文
+    async with request_context(user_id=42):  # trace_id 自动生成
+        results = await gather_with_limit(
+            fetch("https://a.com"),
+            fetch("https://b.com"),
+            max_concurrency=2,
+        )
+        # results: ["[<trace_id>] https://a.com", "[<trace_id>] https://b.com"]
+        # 两个子任务看到的 trace_id 相同（来自同一快照）
+
+asyncio.run(main())
+```
+
+**快照隔离示例：子任务修改不影响父任务**
+
+```python
+import asyncio
+from basic_tool.concurrency import ConcurrencyPool
+from basic_tool.context import ctx, request_context
+
+async def worker():
+    ctx.set("custom_key", "child_value")  # 仅影响当前子任务的快照
+    return ctx.get("custom_key")
+
+async def main():
+    async with request_context():
+        pool = ConcurrencyPool(max_concurrency=1)
+        await pool.run(worker())
+        # 父任务中 custom_key 仍为 None —— 子任务的修改不会传播回来
+        assert ctx.get("custom_key") is None
+
+asyncio.run(main())
+```

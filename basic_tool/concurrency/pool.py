@@ -31,6 +31,10 @@ class PoolStats:
 class ConcurrencyPool:
     """Limits concurrent execution of coroutines using a semaphore.
 
+    请求上下文传播: 协程通过 ``await coro`` 直接执行，保留当前 ContextVar；
+    若需在新 Task 中运行，asyncio.Task 会自动复制当前上下文快照（Python 3.11+），
+    使 ``ctx.get("trace_id")`` 等值在子任务中可见。上下文为快照拷贝，跨任务互不影响。
+
     Args:
         max_concurrency: Maximum number of concurrent tasks. Must be >= 1.
 

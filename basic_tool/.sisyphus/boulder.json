@@ -1,0 +1,57 @@
+{
+  "active_plan": "/home/lizy/projects/LzyProjs/basic_tool/.sisyphus/plans/cross-module-integrations.md",
+  "started_at": "2026-06-13T14:26:36.072Z",
+  "session_ids": [
+    "ses_13e9f5eaeffekvsFM0Uo7lHdBB",
+    "ses_13e81c415ffeKEAQlmsgdXFgAr",
+    "ses_13e817984ffe6m7c6eovrC9qsv",
+    "ses_13e8119b3ffeFzWIvpFE8Vx5pv",
+    "ses_13e80c326ffedEwZDhILOPudms"
+  ],
+  "session_origins": {
+    "ses_13e9f5eaeffekvsFM0Uo7lHdBB": "direct",
+    "ses_13e81c415ffeKEAQlmsgdXFgAr": "appended",
+    "ses_13e817984ffe6m7c6eovrC9qsv": "appended",
+    "ses_13e8119b3ffeFzWIvpFE8Vx5pv": "appended",
+    "ses_13e80c326ffedEwZDhILOPudms": "appended"
+  },
+  "plan_name": "cross-module-integrations",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "**#19 enable_log_injection 幂等守卫 + create_app 自动接入**",
+      "session_id": "ses_13e9c8699ffelcSpe0BcPvgzIR",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-13T14:33:10.477Z"
+    },
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "**#1 http_client 出站请求自动注入 trace headers**",
+      "session_id": "ses_13e93923bffeOtC3OdYmdexgQo",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-13T14:44:34.888Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "**#4 middleware 请求指标采集（直接注入 MetricsCollector）**",
+      "session_id": "ses_13e89a42effefX1KtJB8l9f02r",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-13T14:55:34.000Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_13e8892faffeqSNUVZOXqJdnFn",
+      "agent": "Sisyphus-Junior",
+      "updated_at": "2026-06-13T15:11:55.411Z"
+    }
+  }
+}

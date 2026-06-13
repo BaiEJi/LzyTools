@@ -57,7 +57,7 @@ def enable_log_injection() -> None
 
 | 函数 | 说明 |
 |---|---|
-| `enable_log_injection() -> None` | 启用全局日志上下文注入。所有 loguru 日志记录会自动包含当前上下文字段。用户显式传入的 extra 优先级更高 |
+| `enable_log_injection() -> None` | 启用全局日志上下文注入。所有 loguru 日志记录会自动包含当前上下文字段。用户显式传入的 extra 优先级更高。**幂等**：多次调用不会叠加 patcher |
 
 ---
 

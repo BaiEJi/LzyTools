@@ -9,6 +9,8 @@ from typing import Any, Callable
 
 from loguru import logger
 
+from basic_tool.context.propagation import deserialize_context
+from basic_tool.errors import AppError
 from basic_tool.task_queue.config import TaskConfig
 from basic_tool.task_queue.task import get_registry, get_task_meta
 
@@ -62,9 +64,7 @@ def build_settings(
         meta = get_task_meta(func.__name__) or {}
         max_tries = meta.get("max_tries")
         job_timeout = meta.get("job_timeout")
-
-        if max_tries is not None or job_timeout is not None:
-            func = _wrap_function(func, max_tries=max_tries, job_timeout=job_timeout)
+        func = _wrap_function(func, max_tries=max_tries, job_timeout=job_timeout)
         wrapped_functions.append(func)
 
     settings_class = type("WorkerSettings", (), {
@@ -88,9 +88,13 @@ def build_settings(
 
 
 def _wrap_function(func: Callable, max_tries: int | None = None, job_timeout: int | None = None) -> Callable:
-    """为任务函数包装 per-task 配置。
+    """为任务函数包装 per-task 配置、上下文恢复和业务异常处理。
 
     ARQ 通过函数属性 `max_tries` 和 `job_timeout` 实现 per-task 配置。
+    入队时序列化的请求上下文通过 _context_snapshot kwarg 传入，
+    包装器在执行前恢复上下文（deserialize_context），实现跨进程传播。
+    AppError 被视为业务异常：记录 WARNING 后返回错误标记字典，不触发 ARQ 重试。
+    其他异常照常抛出，由 ARQ 按重试策略处理。
 
     Args:
         func: 原始任务函数。
@@ -98,13 +102,29 @@ def _wrap_function(func: Callable, max_tries: int | None = None, job_timeout: in
         job_timeout: 此任务的超时秒数。
 
     Returns:
-        包装后的函数（保留原始行为，附带配置属性）。
+        包装后的函数（恢复上下文、捕获 AppError、保留配置属性）。
     """
     import functools
 
     @functools.wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        return await func(*args, **kwargs)
+        snapshot = kwargs.pop("_context_snapshot", None)
+
+        async def _execute() -> Any:
+            try:
+                return await func(*args, **kwargs)
+            except AppError as exc:
+                logger.warning(
+                    "task 业务异常 跳过重试 | code={} message={}",
+                    exc.code,
+                    exc.message,
+                )
+                return {"_error": True, "code": exc.code, "message": exc.message}
+
+        if snapshot:
+            async with deserialize_context(snapshot):
+                return await _execute()
+        return await _execute()
 
     if max_tries is not None:
         wrapper.max_tries = max_tries

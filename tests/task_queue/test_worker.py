@@ -4,9 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from basic_tool.errors import AppError
 from basic_tool.task_queue.config import TaskConfig
 from basic_tool.task_queue.task import _REGISTRY, _TASK_META, task
-from basic_tool.task_queue.worker import WorkerRunner, build_settings
+from basic_tool.task_queue.worker import WorkerRunner, build_settings, _wrap_function
 
 
 @pytest.fixture(autouse=True)
@@ -182,3 +183,132 @@ class TestWorkerRunner:
                 await runner.run(burst=True)
 
         mock_worker.async_run.assert_called_once()
+
+
+class TestWrapFunctionErrorHandling:
+    """_wrap_function 的 AppError 跳过重试逻辑测试。"""
+
+    @pytest.mark.asyncio
+    async def test_app_error_not_retried_returns_error_dict(self):
+        """AppError 被捕获，函数仅调用一次，返回错误标记字典。"""
+        call_count = 0
+
+        async def failing_task(ctx):
+            nonlocal call_count
+            call_count += 1
+            raise AppError(code="BIZ_ERR", message="业务异常示例")
+
+        wrapped = _wrap_function(failing_task, max_tries=3)
+        result = await wrapped({})
+
+        assert call_count == 1
+        assert result == {"_error": True, "code": "BIZ_ERR", "message": "业务异常示例"}
+        assert wrapped.max_tries == 3
+
+    @pytest.mark.asyncio
+    async def test_non_app_error_is_reraised_for_retry(self):
+        """非 AppError 异常照常抛出，由 ARQ 按重试策略处理。"""
+        call_count = 0
+
+        async def failing_task(ctx):
+            nonlocal call_count
+            call_count += 1
+            raise ConnectionError("redis down")
+
+        wrapped = _wrap_function(failing_task, max_tries=3)
+
+        with pytest.raises(ConnectionError):
+            await wrapped({})
+
+        assert call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_normal_result_passes_through(self):
+        """无异常时结果正常透传。"""
+
+        async def ok_task(ctx, x):
+            return x * 2
+
+        wrapped = _wrap_function(ok_task)
+        assert await wrapped({}, 21) == 42
+
+
+class TestWrapFunctionContextPropagation:
+    """_wrap_function 的请求上下文恢复测试。"""
+
+    @pytest.mark.asyncio
+    async def test_restores_context_from_snapshot(self):
+        """从 _context_snapshot 恢复请求上下文。"""
+        from basic_tool.context.ctx import ctx
+
+        captured = {}
+
+        async def my_task(arq_ctx):
+            captured["trace_id"] = ctx.get("trace_id")
+            captured["user_id"] = ctx.get("user_id")
+
+        wrapped = _wrap_function(my_task)
+        await wrapped({}, _context_snapshot={"trace_id": "abc-123", "user_id": 99})
+
+        assert captured["trace_id"] == "abc-123"
+        assert captured["user_id"] == 99
+
+    @pytest.mark.asyncio
+    async def test_no_snapshot_executes_without_context(self):
+        """无 _context_snapshot 时正常执行（向后兼容）。"""
+        from basic_tool.context.ctx import ctx
+
+        captured = {}
+
+        async def my_task(arq_ctx):
+            captured["trace_id"] = ctx.get("trace_id")
+
+        wrapped = _wrap_function(my_task)
+        await wrapped({})
+
+        assert captured["trace_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_empty_snapshot_skips_restoration(self):
+        """空字典快照跳过上下文恢复。"""
+        from basic_tool.context.ctx import ctx
+
+        captured = {}
+
+        async def my_task(arq_ctx):
+            captured["trace_id"] = ctx.get("trace_id")
+
+        wrapped = _wrap_function(my_task)
+        await wrapped({}, _context_snapshot={})
+
+        assert captured["trace_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_context_restored_only_during_execution(self):
+        """上下文仅在任务执行期间生效，退出后恢复。"""
+        from basic_tool.context.ctx import ctx
+
+        async def my_task(arq_ctx):
+            pass
+
+        wrapped = _wrap_function(my_task)
+        await wrapped({}, _context_snapshot={"trace_id": "temp-id"})
+
+        assert ctx.get("trace_id") is None
+
+    @pytest.mark.asyncio
+    async def test_app_error_with_context_restoration(self):
+        """上下文恢复与 AppError 处理组合工作正常。"""
+        from basic_tool.context.ctx import ctx
+
+        seen_trace_id = {}
+
+        async def failing_task(arq_ctx):
+            seen_trace_id["val"] = ctx.get("trace_id")
+            raise AppError(code="BIZ_ERR", message="业务异常")
+
+        wrapped = _wrap_function(failing_task, max_tries=3)
+        result = await wrapped({}, _context_snapshot={"trace_id": "err-trace"})
+
+        assert seen_trace_id["val"] == "err-trace"
+        assert result == {"_error": True, "code": "BIZ_ERR", "message": "业务异常"}

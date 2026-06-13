@@ -4,7 +4,7 @@
 返回标准化 JSON 响应并记录结构化日志。
 """
 
-from typing import Mapping
+from typing import Callable, Mapping
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -37,7 +37,11 @@ def _trace_id_from_scope(scope: Mapping[str, object]) -> str:
     return ""
 
 
-def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> None:
+def setup_error_handlers(
+    app: FastAPI,
+    config: ErrorConfig | None = None,
+    on_error: Callable[[str, int], None] | None = None,
+) -> None:
     """注册全局异常处理器。
 
     处理以下异常类型：
@@ -48,6 +52,9 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
     Args:
         app: FastAPI 应用实例。
         config: 错误配置，默认 ErrorConfig()。
+        on_error: 错误指标回调，签名为 ``on_error(error_code: str, http_status: int) -> None``。
+            透传给内部 log_error() 调用，用于在不引入循环依赖的前提下对接 metrics 系统。
+            详见 ``basic_tool.errors.log.log_error`` 的回调协议说明。
     """
     if config is None:
         config = ErrorConfig()
@@ -61,6 +68,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             request_method=request.method,
             request_path=request.url.path,
             trace_id=ctx.get("trace_id", ""),
+            on_error=on_error,
         )
         return JSONResponse(
             status_code=exc.http_status,
@@ -83,6 +91,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             request_method=request.method,
             request_path=request.url.path,
             trace_id=ctx.get("trace_id", ""),
+            on_error=on_error,
         )
         return JSONResponse(
             status_code=422,
@@ -105,6 +114,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             request_method=request.method,
             request_path=request.url.path,
             trace_id=_trace_id_from_scope(request.scope),
+            on_error=on_error,
         )
         response = JSONResponse(
             status_code=500,

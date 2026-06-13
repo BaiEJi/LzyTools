@@ -132,6 +132,9 @@ def create_app(
     # === 日志配置 ===
     if config.log is not None:
         setup_logger(config.log)
+        from basic_tool.context.log_extra import enable_log_injection
+
+        enable_log_injection()
 
     lifespan = _build_lifespan(
         cache=cache,
@@ -160,7 +163,7 @@ def create_app(
 
     # === 中间件 ===
     if config.enable_request_logging:
-        app.add_middleware(RequestLoggingMiddleware)
+        app.add_middleware(RequestLoggingMiddleware, metrics=config.metrics)
 
     if config.enable_context_middleware:
         app.add_middleware(ContextMiddleware)

@@ -13,6 +13,7 @@ from jose import JWTError, jwt
 from loguru import logger
 from pydantic import BaseModel
 
+from basic_tool.context.ctx import ctx
 from basic_tool.fastapi.config import AuthConfig
 
 
@@ -100,6 +101,10 @@ class JWTAuth:
         自动解码 JWT，调用 user_loader 加载用户。
         用户不存在或 token 无效时抛出 401。
 
+        认证成功后，将 token 中的 sub（user_id）注入请求上下文
+        （ctx.set("user_id", ...)），使后续日志、业务逻辑可通过
+        ctx.get("user_id") 获取当前用户 ID。认证失败时不注入。
+
         Args:
             token: 从 Authorization: Bearer 头提取的 JWT token。
 
@@ -129,6 +134,7 @@ class JWTAuth:
         user = await self._user_loader(user_id)
         if user is None:
             raise credentials_exception
+        ctx.set("user_id", user_id)
         return user
 
     def require_scopes(self, *scopes: str) -> Callable:
