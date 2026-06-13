@@ -18,7 +18,7 @@ def log_error(
     config: ErrorConfig | None = None,
     request_method: str = "",
     request_path: str = "",
-    request_id: str = "",
+    trace_id: str = "",
 ) -> None:
     """记录错误日志。
 
@@ -32,7 +32,7 @@ def log_error(
         config: 错误配置，默认使用 ErrorConfig()。
         request_method: 请求方法（GET/POST 等），可选。
         request_path: 请求路径，可选。
-        request_id: 请求 ID，可选。
+        trace_id: 链路追踪 ID，可选。
     """
     from basic_tool.errors.app_error import AppError
 
@@ -44,8 +44,8 @@ def log_error(
         extra["request_method"] = request_method
     if request_path:
         extra["request_path"] = request_path
-    if request_id:
-        extra["request_id"] = request_id
+    if trace_id:
+        extra["trace_id"] = trace_id
 
     bound_logger = logger.bind(**extra) if extra else logger
 

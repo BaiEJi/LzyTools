@@ -1,0 +1,9 @@
+Scenario 2: MetricsConfig Instantiation
+========================================
+Command:
+  python -c "from basic_tool.metrics import MetricsConfig; c = MetricsConfig(); assert c.vm_url == 'http://localhost:8428'; assert c.flush_interval == 5.0; print('config ok')"
+
+Output:
+  config ok
+
+Result: PASS

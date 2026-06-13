@@ -1,0 +1,8 @@
+status: 500
+log has trace_id: False
+response has traceparent: True
+traceparent: 00-588afa6ebeb6d06bdbdfd8d0f4b4411b-2335c0d611c70533-01
+---LOG (first 3 lines)---
+INFO||{}||FastAPI 应用创建完成 | title=test version=0.1.0 debug=False
+ERROR||{'request_method': 'GET', 'request_path': '/boom'}||未捕获异常 | type=RuntimeError message=boom
+ERROR||{'request_method': 'GET', 'request_path': '/boom'}||异常堆栈

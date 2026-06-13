@@ -1,0 +1,9 @@
+Scenario 7: StreamMixin integration
+====================================
+Command:
+  python -c "from basic_tool.redis import Cache; assert 'xadd' in dir(Cache); print('stream ok')"
+
+Output:
+  stream ok
+
+Result: PASS

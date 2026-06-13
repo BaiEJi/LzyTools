@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 20 items
+
+tests/storage/test_storage.py::TestInit::test_init_creates_dir PASSED    [  5%]
+tests/storage/test_storage.py::TestInit::test_init_missing_dir_raises PASSED [ 10%]
+tests/storage/test_storage.py::TestPutGet::test_put_and_get PASSED       [ 15%]
+tests/storage/test_storage.py::TestPutGet::test_put_with_content_type PASSED [ 20%]
+tests/storage/test_storage.py::TestPutGet::test_put_overwrite PASSED     [ 25%]
+tests/storage/test_storage.py::TestPutGet::test_put_empty_data PASSED    [ 30%]
+tests/storage/test_storage.py::TestPutGet::test_get_after_delete_raises PASSED [ 35%]
+tests/storage/test_storage.py::TestDelete::test_delete PASSED            [ 40%]
+tests/storage/test_storage.py::TestDelete::test_delete_not_found PASSED  [ 45%]
+tests/storage/test_storage.py::TestDelete::test_delete_removes_ct_file PASSED [ 50%]
+tests/storage/test_storage.py::TestExists::test_exists PASSED            [ 55%]
+tests/storage/test_storage.py::TestInfo::test_info PASSED                [ 60%]
+tests/storage/test_storage.py::TestList::test_list PASSED                [ 65%]
+tests/storage/test_storage.py::TestList::test_list_empty_prefix PASSED   [ 70%]
+tests/storage/test_storage.py::TestList::test_list_nonexistent_prefix PASSED [ 75%]
+tests/storage/test_storage.py::TestList::test_list_with_ct_sidecar PASSED [ 80%]
+tests/storage/test_storage.py::TestUrl::test_url PASSED                  [ 85%]
+tests/storage/test_storage.py::TestUrl::test_url_no_prefix PASSED        [ 90%]
+tests/storage/test_storage.py::TestSecurity::test_path_traversal PASSED  [ 95%]
+tests/storage/test_storage.py::TestSecurity::test_key_with_leading_slash PASSED [100%]
+
+============================== 20 passed in 0.11s ==============================

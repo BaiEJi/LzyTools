@@ -1,0 +1,21 @@
+Task 4: Create basic_tool/concurrency/pool.py — ConcurrencyPool with PoolStats
+
+FILE CREATED: basic_tool/concurrency/pool.py
+
+VERIFICATION RESULTS:
+- LSP diagnostics: Clean (no errors)
+- ValueError on max_concurrency < 1: PASS
+- Init stats (total=2, used=0, waiting=0, available=2): PASS
+- Single run returns correctly: PASS
+- Concurrent run tracking (used=2, waiting=2, available=0): PASS
+- After completion (used=0, waiting=0, available=2): PASS
+- _waiting counter fix implemented: YES
+  - Incremented BEFORE semaphore acquire
+  - Decremented after acquire (entering running state)
+  - Exception-safe decrement in BaseException handler
+
+IMPLEMENTATION DETAILS:
+- PoolStats dataclass with total, used, waiting fields and available property
+- ConcurrencyPool with _waiting counter tracking
+- asyncio.Lock protects _used and _waiting counter updates
+- Exception safety: BaseException handler decrements _waiting if still positive

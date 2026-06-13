@@ -1,0 +1,7 @@
+status: 200
+log contains trace_id: True
+log contains method: True
+log contains path: True
+---LOG CONTENT (first 5 lines)---
+INFO||{}||请求完成 | method=GET path=/test status=200 elapsed=1.2ms trace_id=7e30de429d3448654ef79f784f985249
+

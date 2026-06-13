@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/email/test_template.py::test_render_with_template_variables PASSED [ 25%]
+tests/email/test_template.py::test_render_nonexistent_template_raises PASSED [ 50%]
+tests/email/test_template.py::test_render_plain_text_fallback PASSED     [ 75%]
+tests/email/test_template.py::test_html_to_plain PASSED                  [100%]
+
+=============================== warnings summary ===============================
+../../miniconda3/lib/python3.13/site-packages/_pytest/config/__init__.py:1434
+  /home/lizy/miniconda3/lib/python3.13/site-packages/_pytest/config/__init__.py:1434: PytestConfigWarning: Unknown config option: import_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================= 4 passed, 1 warning in 0.10s =========================

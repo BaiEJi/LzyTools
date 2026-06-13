@@ -19,11 +19,11 @@
     )
 
     # HTTP 头传播
-    with request_context(request_id="req-1", user_id=42):
+    with request_context(trace_id="req-1", user_id=42):
         headers = inject_headers_to_httpx({"Authorization": "Bearer x"})
 
     # 任务队列序列化
-    with request_context(request_id="job-1", user_id=99):
+    with request_context(trace_id="job-1", user_id=99):
         payload = serialize_context()
     with deserialize_context(payload):
         assert ctx.get("user_id") == 99
@@ -34,8 +34,8 @@ from typing import Any
 from basic_tool.context.ctx import _RequestContext, _context_data, request_context
 
 _DEFAULT_HEADER_MAP: dict[str, str] = {
-    "request_id": "X-Request-Id",
     "trace_id": "X-Trace-Id",
+    "span_id": "X-Span-Id",
     "tenant_id": "X-Tenant-Id",
     "user_id": "X-User-Id",
 }
@@ -63,6 +63,12 @@ def get_propagation_headers(
     for ctx_key, header_name in header_map.items():
         if ctx_key in context:
             headers[header_name] = str(context[ctx_key])
+
+    trace_id = context.get("trace_id")
+    span_id = context.get("span_id")
+    if trace_id and span_id:
+        headers["traceparent"] = f"00-{trace_id}-{span_id}-01"
+
     return headers
 
 

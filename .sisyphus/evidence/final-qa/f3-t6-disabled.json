@@ -1,0 +1,9 @@
+2026-06-13 18:19:09.346 | INFO     | basic_tool.fastapi.app:create_app:208 - FastAPI 应用创建完成 | title=test version=0.1.0 debug=False
+2026-06-13 18:19:09.355 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/test2 status=200 elapsed=1.2ms trace_id=
+{
+  "status": 200,
+  "trace_id_is_none": true,
+  "trace_id": null,
+  "no_traceparent": true,
+  "traceparent": ""
+}

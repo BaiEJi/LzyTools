@@ -1,0 +1,3 @@
+with sender_name: MyApp <user@example.com>
+with sender only: noreply@example.com
+no sender no name: user@example.com

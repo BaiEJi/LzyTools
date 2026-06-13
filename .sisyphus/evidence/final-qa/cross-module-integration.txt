@@ -1,0 +1,42 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 31 items
+
+tests/email/test_dry_run.py::TestDryRunSender::test_send_records_and_returns_success PASSED [  3%]
+tests/email/test_dry_run.py::TestDryRunSender::test_send_bulk_records_all PASSED [  6%]
+tests/email/test_dry_run.py::TestDryRunSender::test_reset_clears_records PASSED [  9%]
+tests/email/test_dry_run.py::TestDryRunSender::test_sent_emails_returns_readonly_copy PASSED [ 12%]
+tests/email/test_models.py::test_email_basic_creation PASSED             [ 16%]
+tests/email/test_models.py::test_email_to_as_list PASSED                 [ 19%]
+tests/email/test_models.py::test_email_empty_subject_raises PASSED       [ 22%]
+tests/email/test_models.py::test_email_empty_to_raises PASSED            [ 25%]
+tests/email/test_models.py::test_email_all_recipients PASSED             [ 29%]
+tests/email/test_models.py::test_attachment_creation PASSED              [ 32%]
+tests/email/test_models.py::test_inline_image_creation PASSED            [ 35%]
+tests/email/test_sender.py::test_smtp_sender_stores_config PASSED        [ 38%]
+tests/email/test_sender.py::test_build_message_basic_headers PASSED      [ 41%]
+tests/email/test_sender.py::test_build_message_with_attachments PASSED   [ 45%]
+tests/email/test_sender.py::test_build_message_inline_images_content_id PASSED [ 48%]
+tests/email/test_sender.py::test_build_message_reply_to PASSED           [ 51%]
+tests/email/test_sender.py::test_build_message_custom_headers PASSED     [ 54%]
+tests/email/test_sender.py::test_send_connection_failure_raises_send_error PASSED [ 58%]
+tests/email/test_sender.py::test_send_smtp_rejection_returns_failure PASSED [ 61%]
+tests/email/test_sender.py::test_bcc_not_in_mime_headers PASSED          [ 64%]
+tests/email/test_sender.py::test_bcc_in_all_recipients PASSED            [ 67%]
+tests/email/test_sender.py::test_build_message_produces_multipart_mixed PASSED [ 70%]
+tests/email/test_sender.py::test_build_message_with_inline_images_has_related PASSED [ 74%]
+tests/email/test_sender.py::test_send_success_returns_send_result PASSED [ 77%]
+tests/email/test_sender.py::test_send_bulk_respects_batch_size PASSED    [ 80%]
+tests/email/test_sender.py::test_close_quits_smtp PASSED                 [ 83%]
+tests/email/test_sender.py::test_close_idempotent PASSED                 [ 87%]
+tests/email/test_template.py::test_render_with_template_variables PASSED [ 90%]
+tests/email/test_template.py::test_render_nonexistent_template_raises PASSED [ 93%]
+tests/email/test_template.py::test_render_plain_text_fallback PASSED     [ 96%]
+tests/email/test_template.py::test_html_to_plain PASSED                  [100%]
+
+============================== 31 passed in 0.15s ==============================

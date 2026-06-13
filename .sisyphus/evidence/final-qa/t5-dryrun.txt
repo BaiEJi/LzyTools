@@ -1,0 +1,20 @@
+=== T5 Scenario 1: pytest test_dry_run ===
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/email/test_dry_run.py::TestDryRunSender::test_send_records_and_returns_success PASSED [ 25%]
+tests/email/test_dry_run.py::TestDryRunSender::test_send_bulk_records_all PASSED [ 50%]
+tests/email/test_dry_run.py::TestDryRunSender::test_reset_clears_records PASSED [ 75%]
+tests/email/test_dry_run.py::TestDryRunSender::test_sent_emails_returns_readonly_copy PASSED [100%]
+
+============================== 4 passed in 0.05s ===============================
+
+=== T5 Scenario 2: DryRunSender manual check ===
+2026-06-13 13:16:49.164 | DEBUG    | basic_tool.email.dry_run:send:61 - dry-run email recorded | to=['test@example.com'] subject=Hi
+OK

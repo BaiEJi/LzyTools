@@ -8,7 +8,7 @@
 - _context_data: ContextVar[dict]，所有上下文数据的唯一存储
 - ContextManager: 上下文读写单例（get/set/getall/dump/clear）
 - ctx: 模块级 ContextManager 单例
-- request_context(): 请求上下文工厂函数，自动生成 request_id
+- request_context(): 请求上下文工厂函数，自动生成 trace_id（W3C 128-bit）
 - _RequestContext: 支持 sync/async with 的上下文管理器
 
 使用方式:
@@ -25,15 +25,18 @@
         assert ctx.get("user_id") == 1  # 退出后恢复
 
     # 异步
-    async with request_context(request_id="abc"):
-        assert ctx.get("request_id") == "abc"
+    async with request_context(trace_id="abc"):
+        assert ctx.get("trace_id") == "abc"
 """
 
-import uuid
 from contextvars import ContextVar
 from typing import Any
 
+from basic_tool.id_generator import TraceGenerator
+
 _context_data: ContextVar[dict[str, Any]] = ContextVar("_context_data", default={})
+
+_trace_gen = TraceGenerator()
 
 
 class ContextManager:
@@ -132,7 +135,7 @@ class _RequestContext:
 
 def request_context(**kwargs: Any) -> _RequestContext:
     """
-    创建请求上下文。未提供 request_id 时自动生成 uuid4().hex。
+    创建请求上下文。未提供 trace_id 时自动生成 128-bit hex（W3C trace_id）。
 
     Args:
         **kwargs: 初始上下文键值对
@@ -140,6 +143,6 @@ def request_context(**kwargs: Any) -> _RequestContext:
     Returns:
         _RequestContext: 支持 sync/async with 的上下文管理器
     """
-    if "request_id" not in kwargs:
-        kwargs["request_id"] = uuid.uuid4().hex
+    if "trace_id" not in kwargs:
+        kwargs["trace_id"] = _trace_gen.trace_id()
     return _RequestContext(kwargs)

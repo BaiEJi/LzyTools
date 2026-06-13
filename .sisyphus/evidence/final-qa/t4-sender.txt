@@ -1,0 +1,40 @@
+=== T4 Scenario 1: pytest test_sender ===
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 16 items
+
+tests/email/test_sender.py::test_smtp_sender_stores_config PASSED        [  6%]
+tests/email/test_sender.py::test_build_message_basic_headers PASSED      [ 12%]
+tests/email/test_sender.py::test_build_message_with_attachments PASSED   [ 18%]
+tests/email/test_sender.py::test_build_message_inline_images_content_id PASSED [ 25%]
+tests/email/test_sender.py::test_build_message_reply_to PASSED           [ 31%]
+tests/email/test_sender.py::test_build_message_custom_headers PASSED     [ 37%]
+tests/email/test_sender.py::test_send_connection_failure_raises_send_error PASSED [ 43%]
+tests/email/test_sender.py::test_send_smtp_rejection_returns_failure PASSED [ 50%]
+tests/email/test_sender.py::test_bcc_not_in_mime_headers PASSED          [ 56%]
+tests/email/test_sender.py::test_bcc_in_all_recipients PASSED            [ 62%]
+tests/email/test_sender.py::test_build_message_produces_multipart_mixed PASSED [ 68%]
+tests/email/test_sender.py::test_build_message_with_inline_images_has_related PASSED [ 75%]
+tests/email/test_sender.py::test_send_success_returns_send_result PASSED [ 81%]
+tests/email/test_sender.py::test_send_bulk_respects_batch_size PASSED    [ 87%]
+tests/email/test_sender.py::test_close_quits_smtp PASSED                 [ 93%]
+tests/email/test_sender.py::test_close_idempotent PASSED                 [100%]
+
+============================== 16 passed in 0.06s ==============================
+
+=== T4 Scenario 2: grep SMTPMessage ===
+        使用标准库 email.mime.* 构建 MIME 树，不依赖 aiosmtplib.SMTPMessage。
+
+=== T4 Scenario 3: sender imports ===
+OK
+
+=== T4 Scenario 4: _build_message MIME check ===
+MIME OK
+
+=== T4 Scenario 5: BCC privacy check ===
+BCC privacy OK

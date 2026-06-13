@@ -96,6 +96,7 @@ class FastApiConfig(BaseModel):
     health_prefix: str = "/health"
     enable_request_logging: bool = True
     enable_error_handlers: bool = True
+    enable_context_middleware: bool = True    # 是否启用请求上下文中间件（W3C Trace Context）
 ```
 
 ### AuthConfig
@@ -184,5 +185,6 @@ async def get_item(item_id: int):
 自动配置的中间件：
 
 1. **CORS** — 跨域资源共享
-2. **RequestLoggingMiddleware** — 请求日志，注入 X-Request-ID
-3. **全局异常处理器** — AppError、ValidationError、Exception
+2. **ContextMiddleware** — 解析 W3C `traceparent` 请求头创建 child span（共享上游 trace_id），缺失时降级为根 trace；注入 trace_id / span_id / client_ip 到请求上下文，响应头回传 `traceparent`。受 `enable_context_middleware` 控制，默认启用
+3. **RequestLoggingMiddleware** — 请求日志，记录 method、path、status、耗时，从请求上下文读取 trace_id。受 `enable_request_logging` 控制
+4. **全局异常处理器** — AppError、RequestValidationError、Exception。受 `enable_error_handlers` 控制

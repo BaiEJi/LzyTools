@@ -1,0 +1,18 @@
+2026-06-13 18:19:16.764 | INFO     | basic_tool.fastapi.app:create_app:208 - FastAPI 应用创建完成 | title=test version=0.1.0 debug=False
+2026-06-13 18:19:16.879 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/conc status=200 elapsed=101.3ms trace_id=06ec5c5445e1a98aff1dc37fdfe95bde
+2026-06-13 18:19:16.880 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/conc status=200 elapsed=104.7ms trace_id=f546f0402add911dbe631eccee8125c9
+2026-06-13 18:19:16.881 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/conc status=200 elapsed=101.2ms trace_id=cdd028136291919a202b8fb67a7c899b
+2026-06-13 18:19:16.883 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/conc status=200 elapsed=103.3ms trace_id=8d842b0ebb99e4d02effe963ceaf577b
+2026-06-13 18:19:16.883 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/conc status=200 elapsed=104.7ms trace_id=fb3aafd20abb93f7c27ea9891e36ece4
+{
+  "all_unique": true,
+  "count": 5,
+  "unique_count": 5,
+  "trace_ids": [
+    "8d842b0ebb99e4d02effe963ceaf577b",
+    "f546f0402add911dbe631eccee8125c9",
+    "cdd028136291919a202b8fb67a7c899b",
+    "fb3aafd20abb93f7c27ea9891e36ece4",
+    "06ec5c5445e1a98aff1dc37fdfe95bde"
+  ]
+}

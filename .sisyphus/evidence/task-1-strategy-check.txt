@@ -1,0 +1,5 @@
+FAIL_FAST = fail_fast
+COLLECT_ALL = collect_all
+SKIP_FAILED = skip_failed
+---
+{'max_concurrency': 10, 'batch_size': 10, 'inter_batch_delay': 0.0, 'default_timeout': 0.0, 'max_retries': 3, 'retry_backoff_base': 1.0, 'retry_backoff_cap': 60.0}

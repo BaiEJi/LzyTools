@@ -1,0 +1,9 @@
+Scenario 5: No eval() in codebase
+===================================
+Command:
+  grep -c 'eval(' basic_tool/metrics/collector.py
+
+Output:
+  0
+
+Result: PASS

@@ -1,0 +1,10 @@
+2 task(s) failed:
+  [0] ValueError: bad
+  [3] TypeError: wrong
+---
+CompositeError(n_errors=2)
+---
+3 task(s) failed:
+  [0] ValueError: bad
+  [1] TypeError: wrong
+  [2] RuntimeError: boom

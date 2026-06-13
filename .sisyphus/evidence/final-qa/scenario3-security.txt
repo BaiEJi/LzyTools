@@ -1,0 +1,5 @@
+2026-06-12 17:47:46.518 | INFO     | basic_tool.storage.local:init:80 - local storage initialized | base_dir=/tmp/qa_security_test
+OK: path traversal blocked: path traversal detected: ../../../etc/passwd
+OK: leading slash blocked: key must not start with '/'
+OK: empty key blocked: key must not be empty
+ALL SECURITY TESTS PASSED

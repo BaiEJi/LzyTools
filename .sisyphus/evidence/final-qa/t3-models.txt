@@ -1,0 +1,30 @@
+=== T3 Scenario 1: pytest test_models ===
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/email/test_models.py::test_email_basic_creation PASSED             [ 14%]
+tests/email/test_models.py::test_email_to_as_list PASSED                 [ 28%]
+tests/email/test_models.py::test_email_empty_subject_raises PASSED       [ 42%]
+tests/email/test_models.py::test_email_empty_to_raises PASSED            [ 57%]
+tests/email/test_models.py::test_email_all_recipients PASSED             [ 71%]
+tests/email/test_models.py::test_attachment_creation PASSED              [ 85%]
+tests/email/test_models.py::test_inline_image_creation PASSED            [100%]
+
+============================== 7 passed in 0.05s ===============================
+
+=== T3 Scenario 2: Empty subject validation ===
+  File "<string>", line 1
+    from basic_tool.email.models import Email; from pydantic import ValidationError; try: Email(to='a@b.com', subject='', body='x'); print('FAIL'); except ValidationError: print('OK')
+                                                                                     ^^^
+SyntaxError: invalid syntax
+
+=== T3 Scenario 3: all_recipients ===
+OK
+=== T3 Scenario 2: Empty subject validation (fixed) ===
+OK

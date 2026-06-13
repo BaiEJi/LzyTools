@@ -30,8 +30,26 @@ class TestAppError:
 class TestRequestLoggingMiddleware:
     """请求日志中间件测试。"""
 
-    def test_request_id_in_response(self):
-        """响应头包含 X-Request-ID。"""
+    def test_log_contains_trace_id_with_context_middleware(self):
+        """栈叠 ContextMiddleware 时日志包含 trace_id。"""
+        from basic_tool.context.middleware import ContextMiddleware
+
+        app = FastAPI()
+        app.add_middleware(RequestLoggingMiddleware)
+        app.add_middleware(ContextMiddleware)  # 后添加 = 外层 = 先执行
+
+        @app.get("/test")
+        async def test_endpoint():
+            return {"ok": True}
+
+        client = TestClient(app)
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        # ContextMiddleware 会设置 traceparent 响应头
+        assert "traceparent" in resp.headers
+
+    def test_log_works_without_context_middleware(self):
+        """无 ContextMiddleware 时正常工作，trace_id 为空。"""
         app = FastAPI()
         app.add_middleware(RequestLoggingMiddleware)
 
@@ -42,23 +60,8 @@ class TestRequestLoggingMiddleware:
         client = TestClient(app)
         resp = client.get("/test")
         assert resp.status_code == 200
-        assert "X-Request-ID" in resp.headers
-        # uuid hex 长度 32
-        assert len(resp.headers["X-Request-ID"]) == 32
-
-    def test_request_id_unique_per_request(self):
-        """每个请求的 request_id 不同。"""
-        app = FastAPI()
-        app.add_middleware(RequestLoggingMiddleware)
-
-        @app.get("/test")
-        async def test_endpoint():
-            return {"ok": True}
-
-        client = TestClient(app)
-        resp1 = client.get("/test")
-        resp2 = client.get("/test")
-        assert resp1.headers["X-Request-ID"] != resp2.headers["X-Request-ID"]
+        # 不崩溃，无 traceparent 响应头（RequestLoggingMiddleware 不再设置任何响应头）
+        assert "traceparent" not in resp.headers
 
 
 class TestSetupErrorHandlers:

@@ -1,0 +1,318 @@
+tests/context/test_ctx.py::TestContextBasic::test_request_context_basic
+tests/context/test_ctx.py::TestContextBasic::test_auto_generate_request_id
+tests/context/test_ctx.py::TestContextBasic::test_ctx_set_dynamic
+tests/context/test_ctx.py::TestContextBasic::test_ctx_getall_snapshot
+tests/context/test_ctx.py::TestContextNesting::test_cleanup_after_exit
+tests/context/test_ctx.py::TestContextNesting::test_nested_override
+tests/context/test_ctx.py::TestContextNesting::test_nested_new_key_disappears
+tests/context/test_ctx.py::TestContextAsync::test_async_with_usage
+tests/context/test_ctx.py::TestContextAsync::test_async_task_inheritance
+tests/context/test_ctx.py::TestContextUtilities::test_ctx_dump
+tests/context/test_ctx.py::TestContextUtilities::test_ctx_clear
+tests/context/test_ctx.py::TestContextUtilities::test_ctx_get_default
+tests/context/test_ctx.py::TestLogInjection::test_enable_log_injection
+tests/context/test_ctx.py::TestPropagation::test_get_propagation_headers
+tests/context/test_ctx.py::TestPropagation::test_get_propagation_headers_custom_map
+tests/context/test_ctx.py::TestPropagation::test_inject_headers_to_httpx
+tests/context/test_ctx.py::TestPropagation::test_inject_headers_to_httpx_user_priority
+tests/context/test_ctx.py::TestPropagation::test_serialize_context
+tests/context/test_ctx.py::TestPropagation::test_deserialize_context
+tests/context/test_ctx.py::TestPropagation::test_deserialize_context_cleanup
+tests/context/test_ctx.py::TestMiddleware::test_middleware_request_id_from_header
+tests/context/test_ctx.py::TestMiddleware::test_middleware_auto_generate_request_id
+tests/context/test_ctx.py::TestMiddleware::test_middleware_response_header
+tests/context/test_ctx.py::TestMiddleware::test_middleware_client_ip
+tests/context/test_ctx.py::TestConcurrency::test_concurrent_isolation
+
+=============================== warnings summary ===============================
+../../miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+25 tests collected in 1.10s
+FFFFFFFFFFFFFFFFFFFFFFFFF                                                [100%]
+=================================== FAILURES ===================================
+_________________ TestContextBasic.test_request_context_basic __________________
+
+self = <context.test_ctx.TestContextBasic object at 0x741a0377c410>
+
+    def test_request_context_basic(self):
+        """进入 request_context 后可读取键值，退出后上下文恢复为空。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:24: ModuleNotFoundError
+________________ TestContextBasic.test_auto_generate_request_id ________________
+
+self = <context.test_ctx.TestContextBasic object at 0x741a0377c910>
+
+    def test_auto_generate_request_id(self):
+        """未提供 request_id 时自动生成 uuid4 hex（32 字符）。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:33: ModuleNotFoundError
+____________________ TestContextBasic.test_ctx_set_dynamic _____________________
+
+self = <context.test_ctx.TestContextBasic object at 0x741a038ae8b0>
+
+    def test_ctx_set_dynamic(self):
+        """ctx.set() 可在当前上下文中动态添加或更新键。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:42: ModuleNotFoundError
+__________________ TestContextBasic.test_ctx_getall_snapshot ___________________
+
+self = <context.test_ctx.TestContextBasic object at 0x741a038aec40>
+
+    def test_ctx_getall_snapshot(self):
+        """ctx.getall() 返回包含全部上下文键值副本的字典。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:50: ModuleNotFoundError
+__________________ TestContextNesting.test_cleanup_after_exit __________________
+
+self = <context.test_ctx.TestContextNesting object at 0x741a0377c7d0>
+
+    def test_cleanup_after_exit(self):
+        """进入上下文前后 getall() 应正确反映上下文状态。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:61: ModuleNotFoundError
+___________________ TestContextNesting.test_nested_override ____________________
+
+self = <context.test_ctx.TestContextNesting object at 0x741a0377ca50>
+
+    def test_nested_override(self):
+        """嵌套上下文内层可覆盖外层键，退出后恢复外层值。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:70: ModuleNotFoundError
+______________ TestContextNesting.test_nested_new_key_disappears _______________
+
+self = <context.test_ctx.TestContextNesting object at 0x741a038aeb10>
+
+    def test_nested_new_key_disappears(self):
+        """内层上下文中 ctx.set() 添加的键在退出后消失。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:79: ModuleNotFoundError
+____________________ TestContextAsync.test_async_with_usage ____________________
+
+self = <context.test_ctx.TestContextAsync object at 0x741a0377c690>
+
+    async def test_async_with_usage(self):
+        """支持 async with 语法使用请求上下文。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:93: ModuleNotFoundError
+_________________ TestContextAsync.test_async_task_inheritance _________________
+
+self = <context.test_ctx.TestContextAsync object at 0x741a0377d090>
+
+    async def test_async_task_inheritance(self):
+        """子 asyncio.Task 继承父上下文中的键值。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:101: ModuleNotFoundError
+______________________ TestContextUtilities.test_ctx_dump ______________________
+
+self = <context.test_ctx.TestContextUtilities object at 0x741a0377d1d0>
+
+    def test_ctx_dump(self):
+        """ctx.dump() 返回包含上下文键的可读字符串。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:116: ModuleNotFoundError
+_____________________ TestContextUtilities.test_ctx_clear ______________________
+
+self = <context.test_ctx.TestContextUtilities object at 0x741a0377d310>
+
+    def test_ctx_clear(self):
+        """ctx.clear() 清空当前上下文字典。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:125: ModuleNotFoundError
+__________________ TestContextUtilities.test_ctx_get_default ___________________
+
+self = <context.test_ctx.TestContextUtilities object at 0x741a038aeea0>
+
+    def test_ctx_get_default(self):
+        """ctx.get() 对不存在的键返回默认值或缺省 None。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:133: ModuleNotFoundError
+__________________ TestLogInjection.test_enable_log_injection __________________
+
+self = <context.test_ctx.TestLogInjection object at 0x741a0377d450>
+
+    def test_enable_log_injection(self):
+        """enable_log_injection() 将上下文字段注入日志记录，用户 extra 优先。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:145: ModuleNotFoundError
+_________________ TestPropagation.test_get_propagation_headers _________________
+
+self = <context.test_ctx.TestPropagation object at 0x741a0377d590>
+
+    def test_get_propagation_headers(self):
+        """get_propagation_headers() 按默认映射从上下文提取 HTTP 头。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:182: ModuleNotFoundError
+___________ TestPropagation.test_get_propagation_headers_custom_map ____________
+
+self = <context.test_ctx.TestPropagation object at 0x741a0377d6d0>
+
+    def test_get_propagation_headers_custom_map(self):
+        """支持自定义 header_map 参数映射上下文键到头名。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:191: ModuleNotFoundError
+_________________ TestPropagation.test_inject_headers_to_httpx _________________
+
+self = <context.test_ctx.TestPropagation object at 0x741a038aefd0>
+
+    def test_inject_headers_to_httpx(self):
+        """inject_headers_to_httpx() 合并上下文头与用户提供的头。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:202: ModuleNotFoundError
+__________ TestPropagation.test_inject_headers_to_httpx_user_priority __________
+
+self = <context.test_ctx.TestPropagation object at 0x741a038af100>
+
+    def test_inject_headers_to_httpx_user_priority(self):
+        """用户提供的同名头优先于上下文传播头。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:212: ModuleNotFoundError
+____________________ TestPropagation.test_serialize_context ____________________
+
+self = <context.test_ctx.TestPropagation object at 0x741a037a1010>
+
+    def test_serialize_context(self):
+        """serialize_context() 返回当前上下文的快照副本。"""
+>       from basic_tool.context.ctx import request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:221: ModuleNotFoundError
+___________________ TestPropagation.test_deserialize_context ___________________
+
+self = <context.test_ctx.TestPropagation object at 0x741a0387a470>
+
+    def test_deserialize_context(self):
+        """deserialize_context() 从序列化数据恢复上下文。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:231: ModuleNotFoundError
+_______________ TestPropagation.test_deserialize_context_cleanup _______________
+
+self = <context.test_ctx.TestPropagation object at 0x741a0387b570>
+
+    def test_deserialize_context_cleanup(self):
+        """deserialize_context() 退出后恢复之前状态，反序列化的键被清除。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:242: ModuleNotFoundError
+____________ TestMiddleware.test_middleware_request_id_from_header _____________
+
+self = <context.test_ctx.TestMiddleware object at 0x741a0377d810>
+
+    def test_middleware_request_id_from_header(self):
+        """中间件从 X-Request-Id 请求头提取 request_id。"""
+>       from basic_tool.context.ctx import ctx
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:258: ModuleNotFoundError
+___________ TestMiddleware.test_middleware_auto_generate_request_id ____________
+
+self = <context.test_ctx.TestMiddleware object at 0x741a0377d950>
+
+    def test_middleware_auto_generate_request_id(self):
+        """无 X-Request-Id 头时中间件自动生成 uuid4 hex。"""
+>       from basic_tool.context.ctx import ctx
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:274: ModuleNotFoundError
+________________ TestMiddleware.test_middleware_response_header ________________
+
+self = <context.test_ctx.TestMiddleware object at 0x741a038af230>
+
+    def test_middleware_response_header(self):
+        """响应头包含 X-Request-Id，无请求头时使用自动生成值。"""
+>       from basic_tool.context.middleware import ContextMiddleware
+E       ModuleNotFoundError: No module named 'basic_tool.context.middleware'
+
+tests/context/test_ctx.py:292: ModuleNotFoundError
+___________________ TestMiddleware.test_middleware_client_ip ___________________
+
+self = <context.test_ctx.TestMiddleware object at 0x741a038af360>
+
+    def test_middleware_client_ip(self):
+        """中间件提取 client_ip 存入上下文。"""
+>       from basic_tool.context.ctx import ctx
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:312: ModuleNotFoundError
+__________________ TestConcurrency.test_concurrent_isolation ___________________
+
+self = <context.test_ctx.TestConcurrency object at 0x741a0377da90>
+
+    async def test_concurrent_isolation(self):
+        """并发任务间上下文隔离，各任务读取各自的 request_id。"""
+>       from basic_tool.context.ctx import ctx, request_context
+E       ModuleNotFoundError: No module named 'basic_tool.context.ctx'
+
+tests/context/test_ctx.py:332: ModuleNotFoundError
+=============================== warnings summary ===============================
+../../miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/context/test_ctx.py::TestContextBasic::test_request_context_basic
+FAILED tests/context/test_ctx.py::TestContextBasic::test_auto_generate_request_id
+FAILED tests/context/test_ctx.py::TestContextBasic::test_ctx_set_dynamic - Mo...
+FAILED tests/context/test_ctx.py::TestContextBasic::test_ctx_getall_snapshot
+FAILED tests/context/test_ctx.py::TestContextNesting::test_cleanup_after_exit
+FAILED tests/context/test_ctx.py::TestContextNesting::test_nested_override - ...
+FAILED tests/context/test_ctx.py::TestContextNesting::test_nested_new_key_disappears
+FAILED tests/context/test_ctx.py::TestContextAsync::test_async_with_usage - M...
+FAILED tests/context/test_ctx.py::TestContextAsync::test_async_task_inheritance
+FAILED tests/context/test_ctx.py::TestContextUtilities::test_ctx_dump - Modul...
+FAILED tests/context/test_ctx.py::TestContextUtilities::test_ctx_clear - Modu...
+FAILED tests/context/test_ctx.py::TestContextUtilities::test_ctx_get_default
+FAILED tests/context/test_ctx.py::TestLogInjection::test_enable_log_injection
+FAILED tests/context/test_ctx.py::TestPropagation::test_get_propagation_headers
+FAILED tests/context/test_ctx.py::TestPropagation::test_get_propagation_headers_custom_map
+FAILED tests/context/test_ctx.py::TestPropagation::test_inject_headers_to_httpx
+FAILED tests/context/test_ctx.py::TestPropagation::test_inject_headers_to_httpx_user_priority
+FAILED tests/context/test_ctx.py::TestPropagation::test_serialize_context - M...
+FAILED tests/context/test_ctx.py::TestPropagation::test_deserialize_context
+FAILED tests/context/test_ctx.py::TestPropagation::test_deserialize_context_cleanup
+FAILED tests/context/test_ctx.py::TestMiddleware::test_middleware_request_id_from_header
+FAILED tests/context/test_ctx.py::TestMiddleware::test_middleware_auto_generate_request_id
+FAILED tests/context/test_ctx.py::TestMiddleware::test_middleware_response_header
+FAILED tests/context/test_ctx.py::TestMiddleware::test_middleware_client_ip
+FAILED tests/context/test_ctx.py::TestConcurrency::test_concurrent_isolation
+25 failed, 1 warning in 1.51s

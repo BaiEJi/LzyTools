@@ -1,0 +1,21 @@
+Scenario 4: Collector Buffer + Prometheus Exposition
+=====================================================
+Command:
+  python -c "
+  from basic_tool.metrics import MetricsCollector, MetricsConfig
+  c = MetricsCollector(MetricsConfig(service_name='test'), endpoint='http://localhost:9999')
+  c.counter('http_requests_total', labels={'method': 'GET'})
+  c.counter('http_requests_total', labels={'method': 'POST'})
+  c.gauge('queue_depth', value=42)
+  output = c.prometheus_exposition()
+  assert '# HELP http_requests_total' in output
+  assert '# TYPE http_requests_total counter' in output
+  assert 'method=\"GET\"' in output
+  assert 'queue_depth 42' in output
+  print('collector ok')
+  "
+
+Output:
+  collector ok
+
+Result: PASS

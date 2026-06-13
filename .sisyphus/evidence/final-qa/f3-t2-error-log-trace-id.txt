@@ -1,0 +1,184 @@
+status: 500
+log contains trace_id: True
+---LOG CONTENT---
+ERROR||{'request_method': 'GET', 'request_path': '/error', 'trace_id': '97c5b1f765e615bce29118b7ebac3108', 'error_code': 'TEST_ERROR', 'http_status': 500}||服务端异常 | error_code=TEST_ERROR http_status=500 message=test error
+ERROR||{'request_method': 'GET', 'request_path': '/error', 'trace_id': '97c5b1f765e615bce29118b7ebac3108', 'error_code': 'TEST_ERROR', 'http_status': 500}||异常堆栈
+Traceback (most recent call last):
+
+  File "/home/lizy/miniconda3/lib/python3.13/threading.py", line 1015, in _bootstrap
+    self._bootstrap_inner()
+    |    -> <function Thread._bootstrap_inner at 0x71eb43b4ef20>
+    -> <Thread(asyncio-portal-71eb4178f380, started daemon 125255228065472)>
+  File "/home/lizy/miniconda3/lib/python3.13/threading.py", line 1044, in _bootstrap_inner
+    self.run()
+    |    -> <function Thread.run at 0x71eb43b4eca0>
+    -> <Thread(asyncio-portal-71eb4178f380, started daemon 125255228065472)>
+  File "/home/lizy/miniconda3/lib/python3.13/threading.py", line 995, in run
+    self._target(*self._args, **self._kwargs)
+    |    |        |    |        |    -> {}
+    |    |        |    |        -> <Thread(asyncio-portal-71eb4178f380, started daemon 125255228065472)>
+    |    |        |    -> ()
+    |    |        -> <Thread(asyncio-portal-71eb4178f380, started daemon 125255228065472)>
+    |    -> <function start_blocking_portal.<locals>.run_blocking_portal at 0x71eb417a1b20>
+    -> <Thread(asyncio-portal-71eb4178f380, started daemon 125255228065472)>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/from_thread.py", line 489, in run_blocking_portal
+    _eventloop.run(
+    |          -> <function run at 0x71eb42dc02c0>
+    -> <module 'anyio._core._eventloop' from '/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/_core/_eventloop.py'>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/_core/_eventloop.py", line 74, in run
+    return async_backend.run(func, args, {}, backend_options)
+           |             |   |     |         -> {}
+           |             |   |     -> ()
+           |             |   -> <function start_blocking_portal.<locals>.run_portal at 0x71eb417a1a80>
+           |             -> <classmethod(<function AsyncIOBackend.run at 0x71eb40d0fba0>)>
+           -> <class 'anyio._backends._asyncio.AsyncIOBackend'>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 2316, in run
+    return runner.run(wrapper())
+           |      |   -> <function start_blocking_portal.<locals>.run_portal at 0x71eb417a1d00>
+           |      -> <function Runner.run at 0x71eb43696520>
+           -> <asyncio.runners.Runner object at 0x71eb4178dd30>
+  File "/home/lizy/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           |    |     |                  -> <Task pending name='anyio.from_thread.start_blocking_portal.<locals>.run_portal' coro=<start_blocking_portal.<locals>.run_por...
+           |    |     -> <function BaseEventLoop.run_until_complete at 0x71eb436940e0>
+           |    -> <_UnixSelectorEventLoop running=True closed=False debug=False>
+           -> <asyncio.runners.Runner object at 0x71eb4178dd30>
+  File "/home/lizy/miniconda3/lib/python3.13/asyncio/base_events.py", line 712, in run_until_complete
+    self.run_forever()
+    |    -> <function BaseEventLoop.run_forever at 0x71eb43694040>
+    -> <_UnixSelectorEventLoop running=True closed=False debug=False>
+  File "/home/lizy/miniconda3/lib/python3.13/asyncio/base_events.py", line 683, in run_forever
+    self._run_once()
+    |    -> <function BaseEventLoop._run_once at 0x71eb43695e40>
+    -> <_UnixSelectorEventLoop running=True closed=False debug=False>
+  File "/home/lizy/miniconda3/lib/python3.13/asyncio/base_events.py", line 2050, in _run_once
+    handle._run()
+    |      -> <function Handle._run at 0x71eb43980e00>
+    -> <Handle Task.task_wakeup()>
+  File "/home/lizy/miniconda3/lib/python3.13/asyncio/events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    |    |            |    |           |    -> <member '_args' of 'Handle' objects>
+    |    |            |    |           -> <Handle Task.task_wakeup()>
+    |    |            |    -> <member '_callback' of 'Handle' objects>
+    |    |            -> <Handle Task.task_wakeup()>
+    |    -> <member '_context' of 'Handle' objects>
+    -> <Handle Task.task_wakeup()>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/from_thread.py", line 222, in _call_func
+    retval = await retval_or_awaitable
+                   -> <coroutine object FastAPI.__call__ at 0x71eb416f7b50>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+                           |      |        -> <function _TestClientTransport.handle_request.<locals>.send at 0x71eb417a19e0>
+                           |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+                           -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+          |    |                |      |        -> <function _TestClientTransport.handle_request.<locals>.send at 0x71eb417a19e0>
+          |    |                |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |                -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <starlette.middleware.errors.ServerErrorMiddleware object at 0x71eb4178f8c0>
+          -> <fastapi.applications.FastAPI object at 0x71eb436afe00>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+          |    |   |      |        -> <function ServerErrorMiddleware.__call__.<locals>._send at 0x71eb40d15d00>
+          |    |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <basic_tool.context.middleware.ContextMiddleware object at 0x71eb4178f4d0>
+          -> <starlette.middleware.errors.ServerErrorMiddleware object at 0x71eb4178f8c0>
+
+  File "/home/lizy/projects/LzyProjs/basic_tool/context/middleware.py", line 111, in __call__
+    await self.app(scope, receive, send_with_traceparent)
+          |    |   |      |        -> <function ContextMiddleware.__call__.<locals>.send_with_traceparent at 0x71eb40d15b20>
+          |    |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <starlette.middleware.exceptions.ExceptionMiddleware object at 0x71eb4178f770>
+          -> <basic_tool.context.middleware.ContextMiddleware object at 0x71eb4178f4d0>
+
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+          |                            |    |    |     |      |        -> <function ContextMiddleware.__call__.<locals>.send_with_traceparent at 0x71eb40d15b20>
+          |                            |    |    |     |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |                            |    |    |     -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |                            |    |    -> <starlette.requests.Request object at 0x71eb4178fe00>
+          |                            |    -> <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x71eb4178f620>
+          |                            -> <starlette.middleware.exceptions.ExceptionMiddleware object at 0x71eb4178f770>
+          -> <function wrap_app_handling_exceptions at 0x71eb42057100>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          |   |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          -> <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x71eb4178f620>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+          |    |   |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |    |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <fastapi.routing.APIRouter object at 0x71eb41775090>
+          -> <fastapi.middleware.asyncexitstack.AsyncExitStackMiddleware object at 0x71eb4178f620>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+          |    |                |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |    |                |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |                -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <bound method Router.app of <fastapi.routing.APIRouter object at 0x71eb41775090>>
+          -> <fastapi.routing.APIRouter object at 0x71eb41775090>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+          |     |      |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |     |      |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |     |      -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |     -> <function Route.handle at 0x71eb420747c0>
+          -> APIRoute(path='/error', name='error_endpoint', methods=['GET'])
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+          |    |   |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |    |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |    |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |    -> <function request_response.<locals>.app at 0x71eb417a1940>
+          -> APIRoute(path='/error', name='error_endpoint', methods=['GET'])
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+          |                            |    |        |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d15ee0>
+          |                            |    |        |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |                            |    |        -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          |                            |    -> <starlette.requests.Request object at 0x71eb41777c50>
+          |                            -> <function request_response.<locals>.app.<locals>.app at 0x71eb40d15f80>
+          -> <function wrap_app_handling_exceptions at 0x71eb42057100>
+> File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+          |   |      |        -> <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x71eb40d160c0>
+          |   |      -> <function _TestClientTransport.handle_request.<locals>.receive at 0x71eb417a1580>
+          |   -> {'type': 'http', 'http_version': '1.1', 'method': 'GET', 'path': '/error', 'raw_path': b'/error', 'root_path': '', 'scheme': ...
+          -> <function request_response.<locals>.app.<locals>.app at 0x71eb40d15f80>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 120, in app
+    response = await f(request)
+                     | -> <starlette.requests.Request object at 0x71eb41777c50>
+                     -> <function get_request_handler.<locals>.app at 0x71eb417a18a0>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                         -> <function run_endpoint_function at 0x71eb420767a0>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+                 |                 |         |       -> {}
+                 |                 |         -> <function error_endpoint at 0x71eb417a1800>
+                 |                 -> Dependant(path_params=[], query_params=[], header_params=[], cookie_params=[], body_params=[], dependencies=[], name=None, ca...
+                 -> <function run_in_threadpool at 0x71eb42260400>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+                 |     |         |        -> functools.partial(<function error_endpoint at 0x71eb417a1800>)
+                 |     |         -> <function run_sync at 0x71eb42dc3d80>
+                 |     -> <module 'anyio.to_thread' from '/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/to_thread.py'>
+                 -> <module 'anyio' from '/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/__init__.py'>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/to_thread.py", line 56, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+                 -> <function get_async_backend at 0x71eb42dc0ae0>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 2476, in run_sync_in_worker_thread
+    return await future
+                 -> <Future finished exception=AppError(code='TEST_ERROR', message='test error', http_status=500)>
+  File "/home/lizy/miniconda3/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    result = context.run(func, *args)
+  File "<string>", line 24, in error_endpoint
+
+basic_tool.errors.app_error.AppError: test error
+

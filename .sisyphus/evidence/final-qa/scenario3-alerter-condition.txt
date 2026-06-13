@@ -1,0 +1,24 @@
+Scenario 3: AlertEvaluator Condition Parsing
+=============================================
+Command:
+  python -c "
+  from basic_tool.metrics.alerter import AlertEvaluator
+  from basic_tool.metrics.models import AlertRule, AlertState
+  from datetime import datetime
+  e = AlertEvaluator()
+  rule = AlertRule(name='test', metric='cpu', condition='> 80')
+  event = e.evaluate(rule, 95.0, now=datetime(2024, 1, 1, 12, 0))
+  assert event.state == AlertState.PENDING
+  event2 = e.evaluate(rule, 95.0, now=datetime(2024, 1, 1, 12, 5))
+  assert event2.state == AlertState.FIRING
+  event3 = e.evaluate(rule, 50.0, now=datetime(2024, 1, 1, 12, 10))
+  assert event3.state == AlertState.OK
+  print('alerter ok')
+  "
+
+Output:
+  2026-06-12 16:20:11.359 | WARNING  | basic_tool.metrics.alerter:evaluate:91 - alert firing | rule=test value=95.0 threshold=80.0
+  2026-06-12 16:20:11.360 | INFO     | basic_tool.metrics.alerter:evaluate:120 - alert resolved | rule=test value=50.0
+  alerter ok
+
+Result: PASS

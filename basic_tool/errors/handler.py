@@ -4,13 +4,37 @@
 返回标准化 JSON 响应并记录结构化日志。
 """
 
+from typing import Mapping
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from basic_tool.context.ctx import ctx
 from basic_tool.errors.app_error import AppError
 from basic_tool.errors.config import ErrorConfig
 from basic_tool.errors.log import log_error
+
+
+def _trace_id_from_scope(scope: Mapping[str, object]) -> str:
+    """从 ASGI scope 中提取 trace_id。
+
+    当异常处理器运行在 ContextMiddleware 之外（如 ServerErrorMiddleware）时，
+    ContextVar 不可用，此时从 scope 中存储的 traceparent 字符串解析 trace_id。
+
+    Args:
+        scope: ASGI scope 字典。
+
+    Returns:
+        trace_id 字符串，解析失败时返回空字符串。
+    """
+    traceparent = scope.get("basic_tool.traceparent", "")
+    if not traceparent or not isinstance(traceparent, str):
+        return ""
+    parts = traceparent.split("-")
+    if len(parts) == 4:
+        return parts[1]
+    return ""
 
 
 def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> None:
@@ -36,7 +60,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             config=config,
             request_method=request.method,
             request_path=request.url.path,
-            request_id=getattr(request.state, "request_id", ""),
+            trace_id=ctx.get("trace_id", ""),
         )
         return JSONResponse(
             status_code=exc.http_status,
@@ -58,7 +82,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             config=config,
             request_method=request.method,
             request_path=request.url.path,
-            request_id=getattr(request.state, "request_id", ""),
+            trace_id=ctx.get("trace_id", ""),
         )
         return JSONResponse(
             status_code=422,
@@ -80,9 +104,13 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
             config=config,
             request_method=request.method,
             request_path=request.url.path,
-            request_id=getattr(request.state, "request_id", ""),
+            trace_id=_trace_id_from_scope(request.scope),
         )
-        return JSONResponse(
+        response = JSONResponse(
             status_code=500,
             content=app_err.to_dict(include_context=config.include_context),
         )
+        traceparent = request.scope.get("basic_tool.traceparent")
+        if traceparent:
+            response.headers["traceparent"] = traceparent
+        return response

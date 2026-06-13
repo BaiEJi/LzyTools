@@ -4,8 +4,7 @@ Context 模块测试。
 测试请求上下文管理、嵌套隔离、异步支持、日志注入、HTTP 传播、
 FastAPI 中间件以及并发隔离。覆盖 basic_tool.context 子包的全部公共 API。
 
-采用 TDD RED 阶段：实现尚不存在，测试通过延迟导入（方法内 import）
-确保 --collect-only 可收集 25 个用例，运行时因模块缺失而全部失败。
+采用方法内 import 风格，确保每个测试独立可读。
 """
 
 import asyncio
@@ -14,6 +13,7 @@ from io import StringIO
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from loguru import logger
+from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class TestContextBasic:
@@ -23,19 +23,19 @@ class TestContextBasic:
         """进入 request_context 后可读取键值，退出后上下文恢复为空。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="r1", user_id=42):
-            assert ctx.get("request_id") == "r1"
+        with request_context(trace_id="t1", user_id=42):
+            assert ctx.get("trace_id") == "t1"
             assert ctx.get("user_id") == 42
         assert ctx.getall() == {}
 
-    def test_auto_generate_request_id(self):
-        """未提供 request_id 时自动生成 uuid4 hex（32 字符）。"""
+    def test_auto_generate_trace_id(self):
+        """未提供 trace_id 时自动生成 128-bit hex（32 字符）。"""
         from basic_tool.context.ctx import ctx, request_context
 
         with request_context():
-            rid = ctx.get("request_id")
-            assert rid is not None
-            assert len(rid) == 32
+            tid = ctx.get("trace_id")
+            assert tid is not None
+            assert len(tid) == 32
 
     def test_ctx_set_dynamic(self):
         """ctx.set() 可在当前上下文中动态添加或更新键。"""
@@ -49,8 +49,8 @@ class TestContextBasic:
         """ctx.getall() 返回包含全部上下文键值副本的字典。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="r1", user_id=42):
-            assert ctx.getall() == {"request_id": "r1", "user_id": 42}
+        with request_context(trace_id="t1", user_id=42):
+            assert ctx.getall() == {"trace_id": "t1", "user_id": 42}
 
 
 class TestContextNesting:
@@ -61,7 +61,7 @@ class TestContextNesting:
         from basic_tool.context.ctx import ctx, request_context
 
         assert ctx.getall() == {}
-        with request_context(request_id="r1"):
+        with request_context(trace_id="t1"):
             assert ctx.getall() != {}
         assert ctx.getall() == {}
 
@@ -69,17 +69,17 @@ class TestContextNesting:
         """嵌套上下文内层可覆盖外层键，退出后恢复外层值。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="outer"):
-            with request_context(request_id="inner"):
-                assert ctx.get("request_id") == "inner"
-            assert ctx.get("request_id") == "outer"
+        with request_context(trace_id="outer"):
+            with request_context(trace_id="inner"):
+                assert ctx.get("trace_id") == "inner"
+            assert ctx.get("trace_id") == "outer"
 
     def test_nested_new_key_disappears(self):
         """内层上下文中 ctx.set() 添加的键在退出后消失。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="r1"):
-            with request_context(request_id="r2"):
+        with request_context(trace_id="t1"):
+            with request_context(trace_id="t2"):
                 ctx.set("temp_key", "temp_val")
                 assert ctx.get("temp_key") == "temp_val"
             assert ctx.get("temp_key") is None
@@ -92,8 +92,8 @@ class TestContextAsync:
         """支持 async with 语法使用请求上下文。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        async with request_context(request_id="async-1"):
-            assert ctx.get("request_id") == "async-1"
+        async with request_context(trace_id="async-1"):
+            assert ctx.get("trace_id") == "async-1"
         assert ctx.getall() == {}
 
     async def test_async_task_inheritance(self):
@@ -115,7 +115,7 @@ class TestContextUtilities:
         """ctx.dump() 返回包含上下文键的可读字符串。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="dump-test", user_id=7):
+        with request_context(trace_id="dump-test", user_id=7):
             dump_str = ctx.dump()
             assert isinstance(dump_str, str)
             assert "dump-test" in dump_str
@@ -124,7 +124,7 @@ class TestContextUtilities:
         """ctx.clear() 清空当前上下文字典。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="r1", user_id=42):
+        with request_context(trace_id="t1", user_id=42):
             ctx.clear()
             assert ctx.getall() == {}
 
@@ -132,7 +132,7 @@ class TestContextUtilities:
         """ctx.get() 对不存在的键返回默认值或缺省 None。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        with request_context(request_id="r1"):
+        with request_context(trace_id="t1"):
             assert ctx.get("nonexistent", default="fallback") == "fallback"
             assert ctx.get("nonexistent") is None
 
@@ -149,10 +149,10 @@ class TestLogInjection:
         logger.remove()
         enable_log_injection()
         logger.add(
-            buf, format="{extra[request_id]}|{message}", level="DEBUG", enqueue=False
+            buf, format="{extra[trace_id]}|{message}", level="DEBUG", enqueue=False
         )
 
-        with request_context(request_id="log-test", user_id=99):
+        with request_context(trace_id="log-test", user_id=99):
             logger.info("hello world")
 
         output = buf.getvalue()
@@ -162,11 +162,11 @@ class TestLogInjection:
         logger.remove()
         enable_log_injection()
         logger.add(
-            buf2, format="{extra[request_id]}|{message}", level="DEBUG", enqueue=False
+            buf2, format="{extra[trace_id]}|{message}", level="DEBUG", enqueue=False
         )
 
-        with request_context(request_id="log-test"):
-            logger.info("override test", request_id="override")
+        with request_context(trace_id="log-test"):
+            logger.info("override test", trace_id="override")
 
         output2 = buf2.getvalue()
         assert "override" in output2
@@ -178,33 +178,38 @@ class TestPropagation:
     """HTTP 头传播与上下文序列化测试。"""
 
     def test_get_propagation_headers(self):
-        """get_propagation_headers() 按默认映射从上下文提取 HTTP 头。"""
+        """get_propagation_headers() 按默认映射从上下文提取 HTTP 头并重建 traceparent。"""
         from basic_tool.context.ctx import request_context
         from basic_tool.context.propagation import get_propagation_headers
 
-        with request_context(request_id="h1", tenant_id="t1"):
+        with request_context(trace_id="t1", span_id="s1", tenant_id="ten1"):
             headers = get_propagation_headers()
-        assert headers == {"X-Request-Id": "h1", "X-Tenant-Id": "t1"}
+        assert headers == {
+            "X-Trace-Id": "t1",
+            "X-Span-Id": "s1",
+            "X-Tenant-Id": "ten1",
+            "traceparent": "00-t1-s1-01",
+        }
 
     def test_get_propagation_headers_custom_map(self):
         """支持自定义 header_map 参数映射上下文键到头名。"""
         from basic_tool.context.ctx import request_context
         from basic_tool.context.propagation import get_propagation_headers
 
-        with request_context(request_id="h1"):
+        with request_context(trace_id="t1"):
             headers = get_propagation_headers(
-                header_map={"request_id": "X-Custom-Id"}
+                header_map={"trace_id": "X-Custom-Id"}
             )
-        assert headers == {"X-Custom-Id": "h1"}
+        assert headers == {"X-Custom-Id": "t1"}
 
     def test_inject_headers_to_httpx(self):
         """inject_headers_to_httpx() 合并上下文头与用户提供的头。"""
         from basic_tool.context.ctx import request_context
         from basic_tool.context.propagation import inject_headers_to_httpx
 
-        with request_context(request_id="h1"):
+        with request_context(trace_id="t1"):
             result = inject_headers_to_httpx({"Authorization": "Bearer x"})
-        assert result["X-Request-Id"] == "h1"
+        assert result["X-Trace-Id"] == "t1"
         assert result["Authorization"] == "Bearer x"
 
     def test_inject_headers_to_httpx_user_priority(self):
@@ -212,18 +217,18 @@ class TestPropagation:
         from basic_tool.context.ctx import request_context
         from basic_tool.context.propagation import inject_headers_to_httpx
 
-        with request_context(request_id="ctx-id"):
-            result = inject_headers_to_httpx({"X-Request-Id": "user-id"})
-        assert result["X-Request-Id"] == "user-id"
+        with request_context(trace_id="ctx-id"):
+            result = inject_headers_to_httpx({"X-Trace-Id": "user-id"})
+        assert result["X-Trace-Id"] == "user-id"
 
     def test_serialize_context(self):
         """serialize_context() 返回当前上下文的快照副本。"""
         from basic_tool.context.ctx import request_context
         from basic_tool.context.propagation import serialize_context
 
-        with request_context(request_id="s1", user_id=42):
+        with request_context(trace_id="s1", user_id=42):
             data = serialize_context()
-        assert data["request_id"] == "s1"
+        assert data["trace_id"] == "s1"
         assert data["user_id"] == 42
 
     def test_deserialize_context(self):
@@ -231,10 +236,10 @@ class TestPropagation:
         from basic_tool.context.ctx import ctx, request_context
         from basic_tool.context.propagation import deserialize_context, serialize_context
 
-        with request_context(request_id="s1", user_id=42):
+        with request_context(trace_id="s1", user_id=42):
             data = serialize_context()
         with deserialize_context(data):
-            assert ctx.get("request_id") == "s1"
+            assert ctx.get("trace_id") == "s1"
             assert ctx.get("user_id") == 42
 
     def test_deserialize_context_cleanup(self):
@@ -242,19 +247,19 @@ class TestPropagation:
         from basic_tool.context.ctx import ctx, request_context
         from basic_tool.context.propagation import deserialize_context, serialize_context
 
-        with request_context(request_id="s1"):
+        with request_context(trace_id="s1"):
             data = serialize_context()
         assert ctx.getall() == {}
         with deserialize_context(data):
-            assert ctx.get("request_id") == "s1"
-        assert ctx.get("request_id") is None
+            assert ctx.get("trace_id") == "s1"
+        assert ctx.get("trace_id") is None
 
 
 class TestMiddleware:
     """FastAPI ContextMiddleware 测试。"""
 
-    def test_middleware_request_id_from_header(self):
-        """中间件从 X-Request-Id 请求头提取 request_id。"""
+    def test_middleware_traceparent_from_header(self):
+        """中间件从 traceparent 请求头解析 trace_id（保留上游 trace_id）。"""
         from basic_tool.context.ctx import ctx
         from basic_tool.context.middleware import ContextMiddleware
 
@@ -262,15 +267,16 @@ class TestMiddleware:
 
         @app.get("/test")
         def get_ctx():
-            return {"request_id": ctx.get("request_id")}
+            return {"trace_id": ctx.get("trace_id")}
 
         app.add_middleware(ContextMiddleware)
         client = TestClient(app)
-        resp = client.get("/test", headers={"X-Request-Id": "my-req-123"})
-        assert resp.json()["request_id"] == "my-req-123"
+        upstream_tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+        resp = client.get("/test", headers={"traceparent": upstream_tp})
+        assert resp.json()["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
 
-    def test_middleware_auto_generate_request_id(self):
-        """无 X-Request-Id 头时中间件自动生成 uuid4 hex。"""
+    def test_middleware_child_span(self):
+        """有 traceparent 头时创建 child span：trace_id 保留，span_id 变化，parent_span_id 正确。"""
         from basic_tool.context.ctx import ctx
         from basic_tool.context.middleware import ContextMiddleware
 
@@ -278,17 +284,61 @@ class TestMiddleware:
 
         @app.get("/test")
         def get_ctx():
-            return {"request_id": ctx.get("request_id")}
+            return {
+                "trace_id": ctx.get("trace_id"),
+                "span_id": ctx.get("span_id"),
+                "parent_span_id": ctx.get("parent_span_id"),
+            }
+
+        app.add_middleware(ContextMiddleware)
+        client = TestClient(app)
+        upstream_tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+        resp = client.get("/test", headers={"traceparent": upstream_tp})
+        data = resp.json()
+        assert data["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
+        assert data["span_id"] != "b7ad6b7169203331"
+        assert len(data["span_id"]) == 16
+        assert data["parent_span_id"] == "b7ad6b7169203331"
+
+    def test_middleware_auto_generate_root_trace(self):
+        """无 traceparent 头时中间件自动生成根 trace（32 hex trace_id）。"""
+        from basic_tool.context.ctx import ctx
+        from basic_tool.context.middleware import ContextMiddleware
+
+        app = FastAPI()
+
+        @app.get("/test")
+        def get_ctx():
+            return {"trace_id": ctx.get("trace_id")}
 
         app.add_middleware(ContextMiddleware)
         client = TestClient(app)
         resp = client.get("/test")
-        rid = resp.json()["request_id"]
-        assert rid is not None
-        assert len(rid) == 32
+        tid = resp.json()["trace_id"]
+        assert tid is not None
+        assert len(tid) == 32
+
+    def test_middleware_malformed_traceparent(self):
+        """malformed traceparent 头时降级为根 trace，返回 HTTP 200。"""
+        from basic_tool.context.ctx import ctx
+        from basic_tool.context.middleware import ContextMiddleware
+
+        app = FastAPI()
+
+        @app.get("/test")
+        def get_ctx():
+            return {"trace_id": ctx.get("trace_id")}
+
+        app.add_middleware(ContextMiddleware)
+        client = TestClient(app)
+        resp = client.get("/test", headers={"traceparent": "garbage"})
+        assert resp.status_code == 200
+        tid = resp.json()["trace_id"]
+        assert tid is not None
+        assert len(tid) == 32
 
     def test_middleware_response_header(self):
-        """响应头包含 X-Request-Id，无请求头时使用自动生成值。"""
+        """响应头包含 traceparent（child span 或 root trace）。"""
         from basic_tool.context.middleware import ContextMiddleware
 
         app = FastAPI()
@@ -300,12 +350,22 @@ class TestMiddleware:
         app.add_middleware(ContextMiddleware)
         client = TestClient(app)
 
-        resp = client.get("/test", headers={"X-Request-Id": "abc"})
-        assert resp.headers["X-Request-Id"] == "abc"
+        upstream_tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+        resp = client.get("/test", headers={"traceparent": upstream_tp})
+        resp_tp = resp.headers["traceparent"]
+        parts = resp_tp.split("-")
+        assert parts[0] == "00"
+        assert parts[1] == "0af7651916cd43dd8448eb211c80319c"
+        assert parts[2] != "b7ad6b7169203331"
+        assert parts[3] == "01"
 
         resp2 = client.get("/test")
-        assert "X-Request-Id" in resp2.headers
-        assert len(resp2.headers["X-Request-Id"]) == 32
+        tp2 = resp2.headers["traceparent"]
+        parts2 = tp2.split("-")
+        assert parts2[0] == "00"
+        assert len(parts2[1]) == 32
+        assert len(parts2[2]) == 16
+        assert parts2[3] == "01"
 
     def test_middleware_client_ip(self):
         """中间件提取 client_ip 存入上下文。"""
@@ -323,22 +383,50 @@ class TestMiddleware:
         resp = client.get("/test")
         assert resp.json()["client_ip"] is not None
 
+    def test_contextvar_propagation_through_middleware(self):
+        """ContextMiddleware 设置的 ContextVar 可被内层中间件读取。"""
+        from basic_tool.context.ctx import ctx
+        from basic_tool.context.middleware import ContextMiddleware
+
+        app = FastAPI()
+        captured = {}
+
+        class InnerMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request, call_next):
+                captured["trace_id"] = ctx.get("trace_id")
+                captured["span_id"] = ctx.get("span_id")
+                return await call_next(request)
+
+        @app.get("/test")
+        def get_ctx():
+            return {"ok": True}
+
+        app.add_middleware(InnerMiddleware)
+        app.add_middleware(ContextMiddleware)
+        client = TestClient(app)
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        assert captured["trace_id"] is not None
+        assert len(captured["trace_id"]) == 32
+        assert captured["span_id"] is not None
+        assert len(captured["span_id"]) == 16
+
 
 class TestConcurrency:
     """并发场景下的上下文隔离测试。"""
 
     async def test_concurrent_isolation(self):
-        """并发任务间上下文隔离，各任务读取各自的 request_id。"""
+        """并发任务间上下文隔离，各任务读取各自的 trace_id。"""
         from basic_tool.context.ctx import ctx, request_context
 
-        async def task_with_context(req_id):
-            with request_context(request_id=req_id):
+        async def task_with_context(tid):
+            with request_context(trace_id=tid):
                 await asyncio.sleep(0.01)
-                return ctx.get("request_id")
+                return ctx.get("trace_id")
 
         results = await asyncio.gather(
-            task_with_context("req-a"),
-            task_with_context("req-b"),
+            task_with_context("trace-a"),
+            task_with_context("trace-b"),
         )
-        assert results[0] == "req-a"
-        assert results[1] == "req-b"
+        assert results[0] == "trace-a"
+        assert results[1] == "trace-b"

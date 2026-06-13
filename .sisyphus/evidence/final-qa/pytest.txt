@@ -1,0 +1,37 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python3.13
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 26 items
+
+tests/id_generator/test_generator.py::TestIDGenerator::test_new_returns_positive_int PASSED [  3%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_new_64bit PASSED [  7%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_new_unique PASSED [ 11%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_new_monotonic PASSED [ 15%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_batch_count PASSED [ 19%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_batch_unique PASSED [ 23%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_batch_monotonic PASSED [ 26%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_batch_zero_raises PASSED [ 30%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_batch_negative_raises PASSED [ 34%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_new_prefixed PASSED [ 38%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_different_worker_ids PASSED [ 42%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_clock_backward PASSED [ 46%]
+tests/id_generator/test_generator.py::TestIDGenerator::test_sequence_overflow PASSED [ 50%]
+tests/id_generator/test_trace.py::TestTraceContext::test_root PASSED     [ 53%]
+tests/id_generator/test_trace.py::TestTraceContext::test_child_span PASSED [ 57%]
+tests/id_generator/test_trace.py::TestTraceContext::test_to_traceparent PASSED [ 61%]
+tests/id_generator/test_trace.py::TestTraceContext::test_from_traceparent_valid PASSED [ 65%]
+tests/id_generator/test_trace.py::TestTraceContext::test_from_traceparent_invalid_format PASSED [ 69%]
+tests/id_generator/test_trace.py::TestTraceContext::test_from_traceparent_invalid_hex PASSED [ 73%]
+tests/id_generator/test_trace.py::TestTraceContext::test_roundtrip PASSED [ 76%]
+tests/id_generator/test_trace.py::TestTraceContext::test_repr PASSED     [ 80%]
+tests/id_generator/test_trace.py::TestTraceGenerator::test_trace_id_length PASSED [ 84%]
+tests/id_generator/test_trace.py::TestTraceGenerator::test_span_id_length PASSED [ 88%]
+tests/id_generator/test_trace.py::TestTraceGenerator::test_new_trace PASSED [ 92%]
+tests/id_generator/test_trace.py::TestTraceGenerator::test_uniqueness PASSED [ 96%]
+tests/id_generator/test_trace.py::TestTraceGenerator::test_from_traceparent PASSED [100%]
+
+============================== 26 passed in 0.10s ==============================

@@ -1,0 +1,42 @@
+T6.4 Root Cause Analysis: Exception handler lacks trace_id
+=========================================================
+
+SYMPTOM:
+- RuntimeError raised in endpoint -> Exception handler log has NO trace_id
+- AppError raised in endpoint -> AppError handler log HAS trace_id
+
+ROOT CAUSE:
+Starlette's build_middleware_stack (applications.py:62-66) routes the
+Exception (catch-all) handler to ServerErrorMiddleware (OUTERMOST middleware),
+while specific handlers like AppError go to ExceptionMiddleware (INNERMOST).
+
+  for key, value in self.exception_handlers.items():
+      if key in (500, Exception):
+          error_handler = value          # -> ServerErrorMiddleware (OUTSIDE ContextMiddleware)
+      else:
+          exception_handlers[key] = value # -> ExceptionMiddleware (INSIDE ContextMiddleware)
+
+MIDDLEWARE STACK (outer to inner):
+  ServerErrorMiddleware  <- Exception handler lives here (trace_id NOT available)
+    ContextMiddleware    <- sets ContextVar here
+      ExceptionMiddleware <- AppError handler lives here (trace_id IS available)
+        Router/Route
+
+CALL STACK EVIDENCE:
+- AppError handler called from: starlette/_exception_handler.py:59 (route level, INSIDE ContextMiddleware)
+- Exception handler called from: starlette/middleware/errors.py:176 (ServerErrorMiddleware, OUTSIDE ContextMiddleware)
+
+IMPACT:
+- AppError (business errors): trace_id IN log ✓, traceparent NOT in response (app_error_handler doesn't set it)
+- RuntimeError/ValueError/etc (unhandled): trace_id NOT IN log ✗, traceparent IN response ✓
+
+FIX PATH:
+In global_exception_handler (handler.py), parse trace_id from scope instead of ContextVar:
+  traceparent = request.scope.get("basic_tool.traceparent", "")
+  # Extract trace_id from "00-{trace_id}-{span_id}-01" format
+  trace_id = traceparent.split("-")[1] if traceparent else ""
+  
+Then use this trace_id for log_error() call.
+
+This is an ARCHITECTURAL LIMITATION of Starlette, not a bug in basic_tool's ContextMiddleware.
+However, the implementation CAN and SHOULD work around it for complete observability.

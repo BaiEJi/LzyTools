@@ -1,0 +1,15 @@
+=== Task 3: with_timeout — PASS ===
+
+File created: basic_tool/concurrency/timeout.py
+
+Verification 1 — Import + basic usage:
+  $ python -c "import asyncio; from basic_tool.concurrency.timeout import with_timeout; asyncio.run(with_timeout(asyncio.sleep(0.01), timeout=5.0)); print('OK')"
+  OK
+
+Verification 2 — ValueError for timeout <= 0:
+  ValueError OK: timeout must be > 0, got 0
+
+Verification 3 — TimeoutError conversion (asyncio.TimeoutError → built-in TimeoutError):
+  TimeoutError OK: coroutine timed out after 0.0s
+
+ALL TESTS PASSED

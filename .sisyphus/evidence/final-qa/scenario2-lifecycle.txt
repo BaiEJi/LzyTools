@@ -1,0 +1,14 @@
+2026-06-12 17:47:36.855 | INFO     | basic_tool.storage.local:init:80 - local storage initialized | base_dir=/tmp/qa_full_test
+2026-06-12 17:47:36.861 | DEBUG    | basic_tool.storage.local:put:116 - file stored | key=photos/test.jpg size=4
+2026-06-12 17:47:36.863 | DEBUG    | basic_tool.storage.local:put:116 - file stored | key=docs/readme.txt size=5
+2026-06-12 17:47:36.872 | DEBUG    | basic_tool.storage.local:delete:157 - file deleted | key=photos/test.jpg
+init OK
+put OK: key=photos/test.jpg
+get OK
+exists OK
+info OK: size=4, ct=image/jpeg
+url OK: http://cdn.example.com/photos/test.jpg
+list OK: 2 files
+delete OK
+close OK
+ALL QA PASSED

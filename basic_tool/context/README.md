@@ -45,7 +45,7 @@ def request_context(**kwargs) -> _RequestContext
 | `ctx.getall() -> dict` | 返回完整上下文快照（副本），无活跃上下文时返回 `{}` |
 | `ctx.dump() -> str` | 人类可读的上下文转储 |
 | `ctx.clear() -> None` | 清空当前上下文 |
-| `request_context(**kwargs) -> _RequestContext` | 创建请求上下文。未提供 `request_id` 时自动生成 uuid4 hex。支持 `with` 和 `async with` |
+| `request_context(**kwargs) -> _RequestContext` | 创建请求上下文。未提供 `trace_id` 时自动生成 128-bit hex（W3C trace_id）。支持 `with` 和 `async with` |
 
 ---
 
@@ -65,8 +65,8 @@ def enable_log_injection() -> None
 
 ```python
 _DEFAULT_HEADER_MAP = {
-    "request_id": "X-Request-Id",
     "trace_id": "X-Trace-Id",
+    "span_id": "X-Span-Id",
     "tenant_id": "X-Tenant-Id",
     "user_id": "X-User-Id",
 }
@@ -79,7 +79,7 @@ def deserialize_context(data: dict) -> _RequestContext
 
 | 函数 | 说明 |
 |---|---|
-| `get_propagation_headers(header_map=None) -> dict` | 从当前上下文提取传播头。默认使用 `_DEFAULT_HEADER_MAP`，只包含当前上下文中存在的键 |
+| `get_propagation_headers(header_map=None) -> dict` | 从当前上下文提取传播头。默认使用 `_DEFAULT_HEADER_MAP`，只包含当前上下文中存在的键。当 `trace_id` 与 `span_id` 同时存在时，额外重建 W3C `traceparent` 头（`00-{trace_id}-{span_id}-01`） |
 | `inject_headers_to_httpx(headers=None) -> dict` | 合并上下文传播头与用户头。用户头优先（不被覆盖） |
 | `serialize_context() -> dict` | 序列化当前上下文（返回副本），用于任务队列传递 |
 | `deserialize_context(data) -> _RequestContext` | 从序列化数据恢复上下文，返回上下文管理器 |
@@ -89,13 +89,13 @@ def deserialize_context(data: dict) -> _RequestContext
 ### `middleware.py` — FastAPI 中间件
 
 ```python
-class ContextMiddleware(BaseHTTPMiddleware): ...
+class ContextMiddleware: ...          # 纯 ASGI 中间件
 def setup_context_middleware(app: FastAPI) -> None
 ```
 
 | 组件 | 说明 |
 |---|---|
-| `ContextMiddleware` | 从 `X-Request-Id` 提取请求 ID（缺失时自动生成），提取 client_ip（优先 `X-Forwarded-For`），创建请求上下文，响应头添加 `X-Request-Id` |
+| `ContextMiddleware` | 纯 ASGI 实现。从 W3C `traceparent` 请求头解析链路上下文并创建 child span（共享上游 trace_id）；缺失或 malformed 时降级为根 trace。提取 client_ip（优先 `X-Forwarded-For`），创建请求上下文，响应头添加 `traceparent`。同时将 traceparent 写入 `scope["basic_tool.traceparent"]`，供 `ServerErrorMiddleware` 中的异常处理器读取——因为异常发生时 `BaseHTTPMiddleware` 会重新抛出异常，导致 `ServerErrorMiddleware` 生成的错误响应绕过中间件 |
 | `setup_context_middleware(app)` | 便捷注册函数 |
 
 ---
@@ -109,7 +109,7 @@ from basic_tool.context import ctx, request_context
 with request_context(user_id=123, tenant_id="acme"):
     ctx.set("action", "login")
     assert ctx.get("user_id") == 123
-    assert ctx.getall() == {"user_id": 123, "tenant_id": "acme", "request_id": "...", "action": "login"}
+    assert ctx.getall() == {"user_id": 123, "tenant_id": "acme", "trace_id": "...", "action": "login"}
 
 # 2. 嵌套上下文（继承父上下文）
 with request_context(user_id=1):
@@ -119,8 +119,8 @@ with request_context(user_id=1):
     assert ctx.get("user_id") == 1  # 退出后恢复
 
 # 3. 异步上下文
-async with request_context(request_id="abc-123"):
-    assert ctx.get("request_id") == "abc-123"
+async with request_context(trace_id="abc-123"):
+    assert ctx.get("trace_id") == "abc-123"
 
 # 4. 日志注入
 from basic_tool.context import enable_log_injection
@@ -137,16 +137,16 @@ with request_context(user_id=42, action="checkout"):
 import httpx
 from basic_tool.context import inject_headers_to_httpx
 
-with request_context(request_id="req-1", user_id=42):
+with request_context(trace_id="req-1", user_id=42):
     headers = inject_headers_to_httpx({"Accept": "application/json"})
-    # headers = {"X-Request-Id": "req-1", "X-User-Id": "42", "Accept": "application/json"}
+    # headers = {"X-Trace-Id": "req-1", "X-User-Id": "42", "Accept": "application/json"}
     async with httpx.AsyncClient() as client:
         resp = await client.get("http://api/users", headers=headers)
 
 # 6. 任务队列序列化
 from basic_tool.context import serialize_context, deserialize_context
 
-with request_context(request_id="job-1", user_id=99):
+with request_context(trace_id="job-1", user_id=99):
     payload = serialize_context()
     # payload 可放入 Celery/RQ 任务参数中
 
@@ -163,6 +163,6 @@ setup_context_middleware(app)
 
 @app.get("/api/me")
 async def me():
-    # 中间件已自动注入 request_id / client_ip
-    return {"request_id": ctx.get("request_id")}
+    # 中间件已自动注入 trace_id / span_id / client_ip
+    return {"trace_id": ctx.get("trace_id")}
 ```

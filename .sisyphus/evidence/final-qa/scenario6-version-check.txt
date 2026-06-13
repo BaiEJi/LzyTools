@@ -1,0 +1,9 @@
+Scenario 6: Version check
+==========================
+Command:
+  python -c "import tomllib; d=tomllib.load(open('pyproject.toml','rb')); assert d['project']['version']=='0.5.0'; print('version ok')"
+
+Output:
+  version ok
+
+Result: PASS

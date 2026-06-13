@@ -1,0 +1,11 @@
+=== T2 Scenario 1: EmailConfig from_address (default) ===
+u
+
+=== T2 Scenario 2: Exception imports ===
+OK
+
+=== T2 Scenario 3: EmailConfig from_address with sender_name ===
+MyApp <u@x.com>
+
+=== T2 Scenario 4: SendError.original ===
+OK

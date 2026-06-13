@@ -1,0 +1,9 @@
+2026-06-12 17:47:56.403 | INFO     | basic_tool.storage.local:init:80 - local storage initialized | base_dir=/tmp/qa_edge_test
+2026-06-12 17:47:56.405 | DEBUG    | basic_tool.storage.local:put:116 - file stored | key=empty.txt size=0
+2026-06-12 17:47:56.412 | DEBUG    | basic_tool.storage.local:put:116 - file stored | key=overwrite.txt size=3
+2026-06-12 17:47:56.413 | DEBUG    | basic_tool.storage.local:put:116 - file stored | key=overwrite.txt size=3
+empty data OK
+overwrite OK
+delete missing OK
+get missing OK
+ALL EDGE CASES PASSED

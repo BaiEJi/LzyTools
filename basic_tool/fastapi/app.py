@@ -12,6 +12,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+from basic_tool.context.middleware import ContextMiddleware
 from basic_tool.errors import setup_error_handlers
 from basic_tool.fastapi.auth import ApiKeyAuth, JWTAuth
 from basic_tool.fastapi.config import FastApiConfig
@@ -160,6 +161,9 @@ def create_app(
     # === 中间件 ===
     if config.enable_request_logging:
         app.add_middleware(RequestLoggingMiddleware)
+
+    if config.enable_context_middleware:
+        app.add_middleware(ContextMiddleware)
 
     if config.enable_error_handlers:
         setup_error_handlers(app)

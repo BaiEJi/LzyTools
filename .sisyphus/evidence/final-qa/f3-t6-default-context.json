@@ -1,0 +1,10 @@
+2026-06-13 18:19:07.076 | INFO     | basic_tool.fastapi.app:create_app:208 - FastAPI 应用创建完成 | title=test version=0.1.0 debug=False
+2026-06-13 18:19:07.084 | INFO     | basic_tool.fastapi.middleware:dispatch:43 - 请求完成 | method=GET path=/test status=200 elapsed=1.0ms trace_id=75623a4a0645dfb23c3ed6d1c0161f65
+{
+  "status": 200,
+  "trace_id_non_none": true,
+  "trace_id_len_32": true,
+  "trace_id": "75623a4a0645dfb23c3ed6d1c0161f65",
+  "has_traceparent": true,
+  "traceparent": "00-75623a4a0645dfb23c3ed6d1c0161f65-26db1267b573aee8-01"
+}

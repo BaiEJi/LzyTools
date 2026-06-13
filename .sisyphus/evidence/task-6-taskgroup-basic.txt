@@ -1,0 +1,17 @@
+Task: Create basic_tool/concurrency/task_group.py - TaskGroup class
+Date: 2026-06-13
+
+File created: basic_tool/concurrency/task_group.py
+
+Implementation:
+- TaskGroup class wrapping asyncio.TaskGroup
+- __aenter__/__aexit__ with BaseExceptionGroup -> CompositeError conversion
+- create() raises RuntimeError outside async with block
+- wait() handles empty task list (returns [])
+
+Verification results:
+- PASS: async with success (tasks complete before exit)
+- PASS: async with error -> CompositeError with 1 error(s)
+- PASS: create outside raises RuntimeError
+- PASS: wait empty returns []
+- ALL TESTS PASSED

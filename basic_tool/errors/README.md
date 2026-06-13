@@ -233,7 +233,7 @@ def setup_error_handlers(app: FastAPI, config: ErrorConfig | None = None) -> Non
 | `RequestValidationError` | 422 | `{"code": "PARAM_INVALID", "message": "Validation error", "errors": [...]}` |
 | `Exception`（兜底） | 500 | `{"code": "INTERNAL_ERROR", "message": "内部服务器错误"}` |
 
-所有异常都会通过 loguru 记录结构化日志，包含请求方法、路径和 request_id。
+所有异常都会通过 loguru 记录结构化日志，包含请求方法、路径和 trace_id（从请求上下文 `ctx.get("trace_id")` 读取，由 ContextMiddleware 注入）。
 
 ```python
 from fastapi import FastAPI

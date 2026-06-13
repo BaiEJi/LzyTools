@@ -1,0 +1,113 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 449 items
+
+tests/concurrency/test_concurrency.py ...............................    [  6%]
+tests/context/test_ctx.py .........................                      [ 12%]
+tests/crypto/test_encrypt.py ........                                    [ 14%]
+tests/crypto/test_kdf.py .....                                           [ 15%]
+tests/crypto/test_password.py ............                               [ 18%]
+tests/crypto/test_sign.py ......                                         [ 19%]
+tests/email/test_dry_run.py ....                                         [ 20%]
+tests/email/test_models.py .......                                       [ 21%]
+tests/email/test_sender.py ................                              [ 25%]
+tests/email/test_template.py ....                                        [ 26%]
+tests/errors/test_app_error.py .........                                 [ 28%]
+tests/errors/test_codes.py ....                                          [ 29%]
+tests/errors/test_handler.py ....                                        [ 30%]
+tests/errors/test_log.py ..                                              [ 30%]
+tests/errors/test_registry.py ...........                                [ 32%]
+tests/http_client/test_client.py ...........                             [ 35%]
+tests/http_client/test_health.py .....                                   [ 36%]
+tests/http_client/test_transport.py ...........                          [ 38%]
+tests/id_generator/test_generator.py .............                       [ 41%]
+tests/id_generator/test_trace.py .............                           [ 44%]
+tests/logger/test_logger.py .............                                [ 47%]
+tests/metrics/test_alerter.py ..........                                 [ 49%]
+tests/metrics/test_collector.py .........                                [ 51%]
+tests/metrics/test_metrics.py ...                                        [ 52%]
+tests/metrics/test_metrics_health.py ...                                 [ 53%]
+tests/metrics/test_models.py ............                                [ 55%]
+tests/metrics/test_reader.py ....                                        [ 56%]
+tests/metrics/test_scraper.py ..                                         [ 57%]
+tests/metrics/test_writer.py F...                                        [ 58%]
+tests/redis/test_advanced.py .......................                     [ 63%]
+tests/redis/test_client.py ..........................s....               [ 70%]
+tests/redis/test_decorators.py .........                                 [ 72%]
+tests/redis/test_health.py ...                                           [ 72%]
+tests/redis/test_locks.py .......                                        [ 74%]
+tests/redis/test_stream.py FFF                                           [ 75%]
+tests/storage/test_storage.py ....................                       [ 79%]
+tests/task_queue/test_queue.py ..............                            [ 82%]
+tests/task_queue/test_task.py .........                                  [ 84%]
+tests/task_queue/test_worker.py ........                                 [ 86%]
+tests/test_fastapi/test_app.py ....................                      [ 90%]
+tests/test_fastapi/test_auth.py ...............                          [ 94%]
+tests/test_fastapi/test_config.py ..........                             [ 96%]
+tests/test_fastapi/test_health.py ........                               [ 98%]
+tests/test_fastapi/test_middleware.py ........                           [100%]
+
+=================================== FAILURES ===================================
+______________________ TestMetricsWriter.test_write_batch ______________________
+tests/metrics/test_writer.py:40: in test_write_batch
+    count = await writer.write_batch(batch)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+basic_tool/metrics/writer.py:95: in write_batch
+    await self.cache.xadd(
+          ^^^^^^^^^^^^^^^
+E   AttributeError: 'Cache' object has no attribute 'xadd'. Did you mean: 'sadd'?
+________________________ TestStreamOps.test_xadd_basic _________________________
+tests/redis/test_stream.py:15: in test_xadd_basic
+    entry_id = await cache.xadd("mystream", {"name": "Alice"})
+                     ^^^^^^^^^^
+E   AttributeError: 'Cache' object has no attribute 'xadd'. Did you mean: 'sadd'?
+________________________ TestStreamOps.test_xadd_maxlen ________________________
+tests/redis/test_stream.py:21: in test_xadd_maxlen
+    await cache.xadd("limited_stream", {"idx": str(i)}, maxlen=10, approximate=True)
+          ^^^^^^^^^^
+E   AttributeError: 'Cache' object has no attribute 'xadd'. Did you mean: 'sadd'?
+________________________ TestStreamOps.test_xadd_fields ________________________
+tests/redis/test_stream.py:27: in test_xadd_fields
+    await cache.xadd("field_stream", {"user": "Bob", "action": "login"})
+          ^^^^^^^^^^
+E   AttributeError: 'Cache' object has no attribute 'xadd'. Did you mean: 'sadd'?
+=============================== warnings summary ===============================
+../../miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/lizy/miniconda3/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/concurrency/test_concurrency.py::test_gather_with_limit_invalid_concurrency
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:159: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_run_in_batches_invalid_batch_size
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:208: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:240: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:242: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/metrics/test_writer.py::TestMetricsWriter::test_write_batch - At...
+FAILED tests/redis/test_stream.py::TestStreamOps::test_xadd_basic - Attribute...
+FAILED tests/redis/test_stream.py::TestStreamOps::test_xadd_maxlen - Attribut...
+FAILED tests/redis/test_stream.py::TestStreamOps::test_xadd_fields - Attribut...
+============ 4 failed, 444 passed, 1 skipped, 5 warnings in 16.53s =============

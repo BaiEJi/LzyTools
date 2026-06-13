@@ -2,7 +2,7 @@
 日志上下文注入模块。
 
 通过 loguru 的 patcher 机制将当前请求上下文字段自动注入到每条日志记录的
-``extra`` 中，使日志格式串可以使用 ``{extra[request_id]}`` 等占位符，
+``extra`` 中，使日志格式串可以使用 ``{extra[trace_id]}`` 等占位符，
 无需在每次打日志时手动传入上下文。
 
 核心组件:
@@ -15,9 +15,9 @@
     from loguru import logger
 
     enable_log_injection()
-    logger.add(sys.stderr, format="{extra[request_id]}|{message}")
+    logger.add(sys.stderr, format="{extra[trace_id]}|{message}")
 
-    with request_context(request_id="abc"):
+    with request_context(trace_id="abc"):
         logger.info("hello")  # 输出: abc|hello
 
 注意:

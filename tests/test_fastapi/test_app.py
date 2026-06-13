@@ -6,6 +6,7 @@ import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
+from basic_tool.context.ctx import ctx
 from basic_tool.fastapi.app import create_app
 from basic_tool.fastapi.config import AuthConfig, CorsConfig, FastApiConfig
 from basic_tool.logger.config import LogConfig
@@ -172,9 +173,40 @@ class TestCreateAppAuth:
 class TestCreateAppMiddleware:
     """中间件配置测试。"""
 
-    def test_request_logging_enabled(self):
-        """启用请求日志。"""
-        config = _default_config(enable_request_logging=True)
+    def test_context_middleware_default_enabled(self):
+        """create_app 默认注册 ContextMiddleware。"""
+        config = _default_config()
+        app = create_app(config)
+
+        @app.get("/test")
+        async def test():
+            return {"trace_id": ctx.get("trace_id")}
+
+        client = TestClient(app)
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        assert "traceparent" in resp.headers
+        assert resp.json()["trace_id"] is not None
+        assert len(resp.json()["trace_id"]) == 32
+
+    def test_context_middleware_disabled(self):
+        """enable_context_middleware=False 时不注册。"""
+        config = _default_config(enable_context_middleware=False)
+        app = create_app(config)
+
+        @app.get("/test")
+        async def test():
+            return {"trace_id": ctx.get("trace_id")}
+
+        client = TestClient(app)
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        assert "traceparent" not in resp.headers
+        assert resp.json()["trace_id"] is None
+
+    def test_request_logging_with_traceparent(self):
+        """启用请求日志时响应头包含 traceparent。"""
+        config = _default_config()
         app = create_app(config)
 
         @app.get("/test")
@@ -184,10 +216,10 @@ class TestCreateAppMiddleware:
         client = TestClient(app)
         resp = client.get("/test")
         assert resp.status_code == 200
-        assert "X-Request-ID" in resp.headers
+        assert "traceparent" in resp.headers
 
     def test_request_logging_disabled(self):
-        """禁用请求日志。"""
+        """禁用请求日志但启用 context middleware。"""
         config = _default_config(enable_request_logging=False)
         app = create_app(config)
 
@@ -198,7 +230,52 @@ class TestCreateAppMiddleware:
         client = TestClient(app)
         resp = client.get("/test")
         assert resp.status_code == 200
-        assert "X-Request-ID" not in resp.headers
+        # ContextMiddleware 仍然注册（独立于 request logging）
+        assert "traceparent" in resp.headers
+
+    def test_full_stack_traceparent_propagation(self):
+        """完整中间件栈 traceparent 端到端传播。"""
+        config = _default_config()
+        app = create_app(config)
+
+        @app.get("/test")
+        async def test():
+            return {"ok": True}
+
+        client = TestClient(app)
+        incoming_trace = "00-abcdef0123456789abcdef0123456789-1111111111111111-01"
+        resp = client.get("/test", headers={"traceparent": incoming_trace})
+        assert resp.status_code == 200
+        # trace_id 保留，span_id 变化
+        outgoing = resp.headers["traceparent"]
+        assert "abcdef0123456789abcdef0123456789" in outgoing  # trace_id preserved
+        assert "1111111111111111" not in outgoing  # span_id changed
+
+    def test_error_has_trace_id(self):
+        """异常请求日志含 trace_id。"""
+        import io
+
+        from loguru import logger
+
+        log_stream = io.StringIO()
+        logger.remove()
+        logger.add(log_stream, format="{extra}||{message}")
+
+        config = _default_config()
+        app = create_app(config)
+
+        @app.get("/error")
+        async def error():
+            raise RuntimeError("boom")
+
+        client = TestClient(app, raise_server_exceptions=False)
+        resp = client.get("/error")
+        assert resp.status_code == 500
+        # ContextMiddleware 仍然设置 traceparent（即使异常）
+        assert "traceparent" in resp.headers
+        # 错误日志包含 trace_id
+        log_content = log_stream.getvalue()
+        assert "trace_id" in log_content
 
 
 class TestCreateAppLifespan:

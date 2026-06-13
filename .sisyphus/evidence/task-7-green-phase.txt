@@ -1,0 +1,70 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 31 items
+
+tests/concurrency/test_concurrency.py::test_gather_with_limit_basic PASSED [  3%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_concurrency_limit PASSED [  6%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_fail_fast PASSED [  9%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_collect_all PASSED [ 12%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_skip_failed PASSED [ 16%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_empty PASSED [ 19%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_progress_callback PASSED [ 22%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_invalid_concurrency PASSED [ 25%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_basic PASSED  [ 29%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_inter_batch_delay PASSED [ 32%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_empty PASSED  [ 35%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_invalid_batch_size PASSED [ 38%]
+tests/concurrency/test_concurrency.py::test_with_timeout_normal PASSED   [ 41%]
+tests/concurrency/test_concurrency.py::test_with_timeout_exceeds PASSED  [ 45%]
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout PASSED [ 48%]
+tests/concurrency/test_concurrency.py::test_with_timeout_custom_message PASSED [ 51%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_first_success PASSED [ 54%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_retry_then_success PASSED [ 58%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_all_fail PASSED [ 61%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_non_retryable PASSED [ 64%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_skip_failed PASSED [ 67%]
+tests/concurrency/test_concurrency.py::test_pool_basic PASSED            [ 70%]
+tests/concurrency/test_concurrency.py::test_pool_concurrency_limit PASSED [ 74%]
+tests/concurrency/test_concurrency.py::test_pool_stats PASSED            [ 77%]
+tests/concurrency/test_concurrency.py::test_pool_invalid_concurrency PASSED [ 80%]
+tests/concurrency/test_concurrency.py::test_task_group_async_with PASSED [ 83%]
+tests/concurrency/test_concurrency.py::test_task_group_task_failure PASSED [ 87%]
+tests/concurrency/test_concurrency.py::test_task_group_manual_wait PASSED [ 90%]
+tests/concurrency/test_concurrency.py::test_composite_error_attributes PASSED [ 93%]
+tests/concurrency/test_concurrency.py::test_composite_error_str_format PASSED [ 96%]
+tests/concurrency/test_concurrency.py::test_error_strategy_values PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/concurrency/test_concurrency.py::test_gather_with_limit_invalid_concurrency
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:159: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_run_in_batches_invalid_batch_size
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:208: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:240: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout
+  /home/lizy/projects/LzyProjs/tests/concurrency/test_concurrency.py:242: RuntimeWarning: coroutine '_identity' was never awaited
+    with pytest.raises(ValueError):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 31 passed, 4 warnings in 9.50s ========================
+=== IMPORT CHECK ===
+All 10 imports OK

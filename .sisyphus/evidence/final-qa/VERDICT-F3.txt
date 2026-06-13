@@ -1,0 +1,62 @@
+F3: REAL MANUAL QA
+==================
+
+SCENARIOS EXECUTED:
+T1.1 Auto-gen trace_id: PASS - f3-t1-auto-gen-trace-id.txt (len=32, all_hex=True)
+T1.2 Child span creation: PASS - f3-t1-child-span.json (trace_id preserved, span_id changed, parent_span_id correct)
+T1.3 Root trace (no header): PASS - f3-t1-root-trace.json (traceparent matches W3C ^00-[0-9a-f]{32}-[0-9a-f]{16}-01$)
+T1.4 Malformed degradation: PASS - f3-t1-malformed-fallback.json (HTTP 200, valid root traceparent generated)
+T1.5 Propagation reconstruction: PASS - f3-t1-propagation.txt (traceparent=00-aaa...-111...-01, X-Trace-Id correct)
+T2.1 Error log trace_id: PASS - f3-t2-error-log-trace-id.txt (trace_id=97c5b1f7... in extra dict for AppError)
+T2.2 AppError status code: PASS - f3-t2-app-error.json (status=500, code=TEST_ERROR)
+T3.1 Default enabled: PASS - f3-t3-default.txt (enable_context_middleware=True)
+T3.2 Disable flag: PASS - f3-t3-disable.txt (enable_context_middleware=False)
+T4.1 Logging reads trace_id: PASS - f3-t4-log-trace-id.txt (trace_id=7e30de42... in access log)
+T6.1 Default context middleware: PASS - f3-t6-default-context.json (trace_id=75623a4a..., has traceparent)
+T6.2 Disabled flag: PASS - f3-t6-disabled.json (trace_id=None, no traceparent)
+T6.3 E2E traceparent: PASS - f3-t6-e2e.json (traceparent preserved, span_id changed)
+T6.4 Exception trace_id: FAIL - f3-t6-error-trace.txt + f3-t6-error-trace-diagnostic.txt
+T6.5 Concurrent isolation: PASS - f3-t6-concurrent.json (5/5 unique trace_ids)
+
+VERDICT: REJECT
+
+FAILURE DETAILS:
+================
+T6.4 Exception trace_id: FAIL
+
+Expected: Unhandled exception (RuntimeError) error log contains trace_id
+Actual: Error log has NO trace_id (empty string)
+
+Evidence:
+  status: 500 (correct)
+  response has traceparent: True (correct - 00-588afa6e...-2335c0d6...-01)
+  log has trace_id: False (FAIL)
+
+Root Cause (see f3-t6-error-trace-diagnostic.txt for full analysis):
+  Starlette's build_middleware_stack (applications.py:62-66) assigns the
+  Exception (catch-all) handler to ServerErrorMiddleware (OUTERMOST middleware),
+  which runs OUTSIDE ContextMiddleware's `with request_context(...)` block.
+  Therefore, ctx.get("trace_id") returns "" in the global exception handler.
+
+  In contrast, AppError-specific handlers are registered on ExceptionMiddleware
+  (INNERMOST middleware, INSIDE ContextMiddleware), so they CAN read trace_id.
+  This was confirmed by comparing call stacks:
+    - AppError handler: called from _exception_handler.py:59 (route level)
+    - Exception handler: called from middleware/errors.py:176 (ServerErrorMiddleware)
+
+Impact:
+  - Business errors (AppError): trace_id IN log ✓
+  - Unhandled exceptions (RuntimeError, ValueError, etc.): trace_id NOT IN log ✗
+  - Response traceparent: correctly set for BOTH (from request.scope) ✓
+
+Fix Path:
+  In global_exception_handler (basic_tool/errors/handler.py), extract trace_id
+  from request.scope["basic_tool.traceparent"] instead of ctx.get("trace_id"):
+    traceparent = request.scope.get("basic_tool.traceparent", "")
+    trace_id = traceparent.split("-")[1] if len(traceparent.split("-")) >= 2 else ""
+  This is the same scope-based approach already used for the response header.
+
+SUMMARY: 14/15 PASS, 1 FAIL
+The single failure is an architectural limitation of Starlette's middleware
+ordering, not a bug in basic_tool's ContextMiddleware implementation. The fix
+is straightforward (parse trace_id from scope in the global handler).

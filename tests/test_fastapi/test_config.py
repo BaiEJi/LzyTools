@@ -97,3 +97,17 @@ class TestFastApiConfig:
         assert config.log is not None
         assert config.log.level == "DEBUG"
         assert config.log.json_output is True
+
+
+class TestContextMiddlewareConfig:
+    """Context 中间件配置测试。"""
+
+    def test_context_middleware_default_enabled(self):
+        """默认启用 context middleware。"""
+        config = FastApiConfig(title="test")
+        assert config.enable_context_middleware is True
+
+    def test_context_middleware_can_disable(self):
+        """可以禁用 context middleware。"""
+        config = FastApiConfig(title="test", enable_context_middleware=False)
+        assert config.enable_context_middleware is False

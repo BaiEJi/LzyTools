@@ -1,0 +1,71 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- /home/lizy/miniconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /home/lizy/projects/LzyProjs
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.10.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 31 items
+
+tests/concurrency/test_concurrency.py::test_gather_with_limit_basic FAILED [  3%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_concurrency_limit FAILED [  6%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_fail_fast FAILED [  9%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_collect_all FAILED [ 12%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_skip_failed FAILED [ 16%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_empty FAILED [ 19%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_progress_callback FAILED [ 22%]
+tests/concurrency/test_concurrency.py::test_gather_with_limit_invalid_concurrency FAILED [ 25%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_basic FAILED  [ 29%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_inter_batch_delay FAILED [ 32%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_empty FAILED  [ 35%]
+tests/concurrency/test_concurrency.py::test_run_in_batches_invalid_batch_size FAILED [ 38%]
+tests/concurrency/test_concurrency.py::test_with_timeout_normal FAILED   [ 41%]
+tests/concurrency/test_concurrency.py::test_with_timeout_exceeds FAILED  [ 45%]
+tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout FAILED [ 48%]
+tests/concurrency/test_concurrency.py::test_with_timeout_custom_message FAILED [ 51%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_first_success FAILED [ 54%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_retry_then_success FAILED [ 58%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_all_fail FAILED [ 61%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_non_retryable FAILED [ 64%]
+tests/concurrency/test_concurrency.py::test_gather_with_retry_skip_failed FAILED [ 67%]
+tests/concurrency/test_concurrency.py::test_pool_basic FAILED            [ 70%]
+tests/concurrency/test_concurrency.py::test_pool_concurrency_limit FAILED [ 74%]
+tests/concurrency/test_concurrency.py::test_pool_stats FAILED            [ 77%]
+tests/concurrency/test_concurrency.py::test_pool_invalid_concurrency FAILED [ 80%]
+tests/concurrency/test_concurrency.py::test_task_group_async_with FAILED [ 83%]
+tests/concurrency/test_concurrency.py::test_task_group_task_failure FAILED [ 87%]
+tests/concurrency/test_concurrency.py::test_task_group_manual_wait FAILED [ 90%]
+tests/concurrency/test_concurrency.py::test_composite_error_attributes PASSED [ 93%]
+tests/concurrency/test_concurrency.py::test_composite_error_str_format PASSED [ 96%]
+tests/concurrency/test_concurrency.py::test_error_strategy_values PASSED [100%]
+
+=========================== short test summary info ============================
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_basic - ...
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_concurrency_limit
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_fail_fast
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_collect_all
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_skip_failed
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_empty - ...
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_progress_callback
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_limit_invalid_concurrency
+FAILED tests/concurrency/test_concurrency.py::test_run_in_batches_basic - Mod...
+FAILED tests/concurrency/test_concurrency.py::test_run_in_batches_inter_batch_delay
+FAILED tests/concurrency/test_concurrency.py::test_run_in_batches_empty - Mod...
+FAILED tests/concurrency/test_concurrency.py::test_run_in_batches_invalid_batch_size
+FAILED tests/concurrency/test_concurrency.py::test_with_timeout_normal - Modu...
+FAILED tests/concurrency/test_concurrency.py::test_with_timeout_exceeds - Mod...
+FAILED tests/concurrency/test_concurrency.py::test_with_timeout_invalid_timeout
+FAILED tests/concurrency/test_concurrency.py::test_with_timeout_custom_message
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_retry_first_success
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_retry_retry_then_success
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_retry_all_fail
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_retry_non_retryable
+FAILED tests/concurrency/test_concurrency.py::test_gather_with_retry_skip_failed
+FAILED tests/concurrency/test_concurrency.py::test_pool_basic - ModuleNotFoun...
+FAILED tests/concurrency/test_concurrency.py::test_pool_concurrency_limit - M...
+FAILED tests/concurrency/test_concurrency.py::test_pool_stats - ModuleNotFoun...
+FAILED tests/concurrency/test_concurrency.py::test_pool_invalid_concurrency
+FAILED tests/concurrency/test_concurrency.py::test_task_group_async_with - Mo...
+FAILED tests/concurrency/test_concurrency.py::test_task_group_task_failure - ...
+FAILED tests/concurrency/test_concurrency.py::test_task_group_manual_wait - M...
+========================= 28 failed, 3 passed in 0.20s =========================

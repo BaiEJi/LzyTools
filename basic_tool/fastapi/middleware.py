@@ -5,7 +5,6 @@ AppError 和 setup_error_handlers 已迁移至 basic_tool.errors 模块。
 """
 
 import time
-import uuid
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -13,6 +12,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from basic_tool.context.ctx import ctx
 from basic_tool.errors import AppError, setup_error_handlers as _setup_error_handlers
 
 
@@ -20,8 +20,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """请求日志中间件。
 
     记录每个请求的 method、path、status_code、耗时。
-    自动注入 X-Request-ID 到 request.state 和响应头。
-    使用 loguru 结构化日志，格式与 SDK 其他模块一致。
+    从请求上下文中读取 trace_id（由 ContextMiddleware 注入），
+    使用 loguru 结构化日志。当未注册 ContextMiddleware 时 trace_id 为空字符串。
     """
 
     async def dispatch(self, request: Request, call_next: Any) -> Any:
@@ -34,23 +34,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         Returns:
             响应对象。
         """
-        request_id = uuid.uuid4().hex
-        request.state.request_id = request_id
+        trace_id = ctx.get("trace_id", "")
         start = time.perf_counter()
 
         response = await call_next(request)
 
         elapsed_ms = (time.perf_counter() - start) * 1000
         logger.info(
-            "请求完成 | method={} path={} status={} elapsed={:.1f}ms request_id={}",
+            "请求完成 | method={} path={} status={} elapsed={:.1f}ms trace_id={}",
             request.method,
             request.url.path,
             response.status_code,
             elapsed_ms,
-            request_id,
+            trace_id,
         )
 
-        response.headers["X-Request-ID"] = request_id
         return response
 
 

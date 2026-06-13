@@ -1,0 +1,30 @@
+basic_tool/context/ — Manual QA Results
+========================================
+
+Scenario 1: Sync context lifecycle          — PASS
+  - request_context sets/gets values correctly
+  - ctx.set/getall work inside context
+  - Context cleared after exit
+
+Scenario 2: Async context inheritance       — PASS
+  - Context propagates to asyncio.create_task children
+  - user_id=99 retrieved from child task
+
+Scenario 3: Nested context restoration      — PASS
+  - Inner context overrides outer
+  - Outer context restored after inner exits
+
+Scenario 4: Log injection                   — PASS
+  - enable_log_injection adds context fields to loguru output
+  - request_id=log-qa present in formatted log message
+
+Scenario 5: HTTP header propagation         — PASS
+  - get_propagation_headers returns X-Request-Id, X-Tenant-Id
+  - inject_headers_to_httpx merges context headers with existing
+
+Scenario 6: FastAPI middleware              — PASS
+  - ContextMiddleware reads X-Request-Id from request headers
+  - ctx.get('request_id') accessible in route handler
+  - X-Request-Id returned in response headers
+
+Scenarios [6/6 pass] | Integration [6/6] | VERDICT: APPROVE

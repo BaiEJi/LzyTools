@@ -60,6 +60,7 @@ class FastApiConfig(BaseModel):
         health_prefix: 健康检查端点路径前缀。
         enable_request_logging: 是否启用请求日志中间件。
         enable_error_handlers: 是否启用全局异常处理器。
+        enable_context_middleware: 是否启用请求上下文中间件（W3C Trace Context）。
     """
 
     title: str = "API"
@@ -71,3 +72,4 @@ class FastApiConfig(BaseModel):
     health_prefix: str = "/health"
     enable_request_logging: bool = True
     enable_error_handlers: bool = True
+    enable_context_middleware: bool = True
