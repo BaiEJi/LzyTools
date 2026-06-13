@@ -189,9 +189,60 @@ class Cache:
 
 #### Stream 操作
 
+**写入**
+
 | 方法 | 说明 |
 |---|---|
 | `async xadd(name, fields, *, id="*", maxlen=None, approximate=True) -> str` | 向 Stream 追加消息，返回 entry ID |
+
+**读取**
+
+| 方法 | 说明 |
+|---|---|
+| `async xrange(name, min="-", max="+", count=None) -> list[tuple]` | 按 ID 范围正序读取 |
+| `async xrevrange(name, max="+", min="-", count=None) -> list[tuple]` | 按 ID 范围倒序读取 |
+| `async xread(streams, count=None, block=None) -> list[tuple] | None` | 从多个 Stream 读取新条目，block 为毫秒 |
+
+**管理**
+
+| 方法 | 说明 |
+|---|---|
+| `async xlen(name) -> int` | 获取 Stream 条目总数 |
+| `async xtrim(name, maxlen, approximate=True) -> int` | 裁剪 Stream 到指定最大长度 |
+| `async xdel(name, *ids) -> int` | 删除指定 entry |
+| `async xinfo_stream(name, full=False) -> dict` | 获取 Stream 元信息 |
+
+**消费者组**
+
+| 方法 | 说明 |
+|---|---|
+| `async xgroup_create(name, groupname, id="$", mkstream=False) -> bool` | 创建消费者组 |
+| `async xgroup_destroy(name, groupname) -> bool` | 销毁消费者组 |
+| `async xgroup_delconsumer(name, groupname, consumername) -> int` | 删除消费者，返回 pending 数 |
+| `async xgroup_setid(name, groupname, id="$") -> bool` | 设置消费者组的 last delivered ID |
+
+**消费者组读取 & 确认**
+
+| 方法 | 说明 |
+|---|---|
+| `async xreadgroup(groupname, consumername, streams, count=None, block=None, noack=False) -> list[tuple] | None` | 以消费者组身份读取，id 为 `">"` 读新消息 |
+| `async xack(name, groupname, *ids) -> int` | 确认消息，从 pending 中移除 |
+
+**Pending 消息管理**
+
+| 方法 | 说明 |
+|---|---|
+| `async xpending(name, groupname) -> dict` | 获取 pending 摘要（数、最小/最大 ID、消费者） |
+| `async xpending_range(name, groupname, min, max, count, consumername=None) -> list[dict]` | 获取指定范围的 pending 详情 |
+| `async xclaim(name, groupname, consumername, min_idle_time, *ids) -> list[tuple]` | 认领超时空闲的 pending 消息 |
+| `async xautoclaim(name, groupname, consumername, min_idle_time, start="0-0", count=None) -> tuple` | 自动认领，返回 (next_start, entries) 用于分页 |
+
+**消费者组信息**
+
+| 方法 | 说明 |
+|---|---|
+| `async xinfo_groups(name) -> list[dict]` | 获取所有消费者组信息 |
+| `async xinfo_consumers(name, groupname) -> list[dict]` | 获取组内所有消费者信息 |
 
 ---
 
